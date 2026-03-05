@@ -167,6 +167,40 @@ public class CameraController
 - 减少成员间耦合，降低副作用风险
 - 在性能可接受时保持实现更轻量、更易读
 
+### 7. 能用属性表达状态时，优先使用属性
+
+**原则**：如果需求本质是“设置/读取一个状态”，并且副作用是该状态的直接同步（如 UI 显隐、节点可见性联动），优先设计为属性而非 `SetXxx(...)` 方法。
+
+**默认做法**：
+- 优先提供 `public Type Xxx { get; set; }`，在 setter 内统一处理联动逻辑
+- 调用方使用赋值语义，减少“状态设置 API”数量
+- 若已有同义 `SetXxx(...)`，且无额外流程语义，优先收敛到属性
+
+**边界条件**（以下场景不强行用属性）：
+- 操作是“动作”而非“状态”（如播放动画、提交、刷新、重算）
+- 需要多个参数共同决定行为，单属性会造成语义含糊
+- 需要显式表达执行时机或幂等策略（如 `ApplyNow()`、`Commit()`）
+
+**示例**：
+```csharp
+// ✅ 推荐：状态同步用属性
+public BattleEnvironment Environment
+{
+    get;
+    set
+    {
+        field = value;
+        EnvironmentIcon.Environment = value;
+        frostNode?.Set("visible", value == BattleEnvironment.Cold);
+        fogNode?.Set("visible", value == BattleEnvironment.BlackFog);
+        stormNode?.Set("visible", value == BattleEnvironment.Wind);
+    }
+}
+
+// 调用方
+mbattle.Environment = value;
+```
+
 ## 实践指南
 
 ### 状态封装模式

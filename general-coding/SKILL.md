@@ -26,3 +26,19 @@ if (child is Control childControl) processStack.Push(childControl);
 
 - 方法命名与参数语义必须一一对应，不要让调用方同时承担“状态来源”和“状态校验”两份职责。
 - 如果同一操作可以由单一参数表达（例如位置索引），不要再引入额外参数制造歧义。
+
+## 单点调用函数应收敛为局部闭包
+
+- 当某个函数只在一个方法内部被调用时，默认改为该方法内的局部函数（闭包），避免扩大可见范围。
+- 仅在以下情况保留为类级方法：需要复用、需要单元测试直接调用、或会显著影响可读性。
+
+**默认：**
+```csharp
+void UpdateVision() {
+	void ConfigureCardAsPreview(MChrCardBig card) {
+		card.DeactivateButton();
+		card.btnCard.MouseFilter = MouseFilterEnum.Ignore;
+	}
+	ConfigureCardAsPreview(card);
+}
+```
