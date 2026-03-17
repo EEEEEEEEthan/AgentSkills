@@ -27,18 +27,33 @@ if (child is Control childControl) processStack.Push(childControl);
 - 方法命名与参数语义必须一一对应，不要让调用方同时承担“状态来源”和“状态校验”两份职责。
 - 如果同一操作可以由单一参数表达（例如位置索引），不要再引入额外参数制造歧义。
 
-## 单点调用函数应收敛为局部闭包
+## 单函数内封装规则
 
-- 当某个函数只在一个方法内部被调用时，默认改为该方法内的局部函数（闭包），避免扩大可见范围。
-- 仅在以下情况保留为类级方法：需要复用、需要单元测试直接调用、或会显著影响可读性。
+- 如果一段逻辑在当前函数内只调用一次，默认**不要封装**，直接内联到调用处。
+- 如果一段逻辑仅被当前函数调用，但在该函数内会调用多次，默认提取为**局部闭包**。
+- 仅在以下情况提升为类级方法：跨函数复用、需要独立测试、或明显提升可读性。
 
-**默认：**
+**不符合（单次调用仍封装）：**
+```csharp
+int RollStepDelta() {
+	return (int)(GD.Randi() % 36) + 12;
+}
+var stepDelta = RollStepDelta();
+```
+
+**符合（单次调用直接内联）：**
+```csharp
+var stepDelta = (int)(GD.Randi() % 36) + 12;
+```
+
+**符合（同函数多次调用提取闭包）：**
 ```csharp
 void UpdateVision() {
 	void ConfigureCardAsPreview(MChrCardBig card) {
 		card.DeactivateButton();
 		card.btnCard.MouseFilter = MouseFilterEnum.Ignore;
 	}
-	ConfigureCardAsPreview(card);
+	ConfigureCardAsPreview(cardA);
+	ConfigureCardAsPreview(cardB);
 }
 ```

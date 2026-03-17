@@ -115,6 +115,46 @@ func _refresh_title():
 - 如果节点确实可能不存在（非 unique 节点），可以保留检查
 - 但应该使用 `get_node_or_null()` 并明确处理 null 情况
 
+### 4. 成员声明顺序
+
+**原则**：字段 → 属性（含 getter/setter）→ 方法
+
+**正确示例**：
+```gdscript
+var _move_task: BotTaskMove
+var _cancel_flag: RefCounted
+
+var is_cancelled: bool:
+	get: return _move_task.aborted
+
+func _ready() -> void:
+	pass
+```
+
+**为什么重要**：统一顺序便于快速定位，属性依赖字段，方法依赖两者。
+
+### 5. 返回值风格：属性 vs 方法
+
+**原则**：
+- **返回固定值**：优先用属性（getter），如 `var is_cancelled: bool: get: return _move_task.aborted`
+- **每次获取新实例**：避免命名为 `get_xxx`，用 `new_xxx` 等，如 `new_bot_api()` 而非 `get_bot_api()`
+
+**为什么重要**：`get_xxx` 易被误解为返回缓存引用；属性更符合“读取状态”的语义。
+
+### 6. call_deferred 使用 StringName
+
+**问题**：`call_deferred("method_name", args)` 使用字符串字面量，易拼写错误且无类型提示。
+
+**正确做法**：
+```gdscript
+# ✅ 使用 & 前缀生成 StringName，Godot 4 推荐用于方法名
+object.call_deferred(&"move_by", direction, callback)
+```
+
+**为什么重要**：
+- StringName 是 Godot 4 中方法名的推荐类型
+- `call_deferred` 必须传入方法名，无法直接传 Callable
+
 ## 实践模式
 
 ### 标准模式：导出属性 + 刷新函数
@@ -178,6 +218,7 @@ func _refresh_icon():
 
 编写 Godot 脚本时，检查：
 
+- [ ] 成员顺序是否为：字段 → 属性 → 方法？
 - [ ] 导出属性的 setter 是否检查 `is_node_ready()`？
 - [ ] 是否在 `_ready()` 中刷新所有导出属性？
 - [ ] 是否使用 `@onready` 缓存所有节点引用？
@@ -185,6 +226,7 @@ func _refresh_icon():
 - [ ] 是否移除了对 unique 节点的防御性检查？
 - [ ] 刷新函数是否直接访问节点（无 null 检查）？
 - [ ] 节点引用是否有正确的类型提示？
+- [ ] `call_deferred` 是否使用 `&"method_name"` 而非 `"method_name"`？
 
 ## 常见错误
 
@@ -225,6 +267,12 @@ func _refresh():
     var label = %Label
     if label:  # ❌ 错误：unique 节点应该始终存在
         label.text = text
+```
+
+### 错误 5：call_deferred 使用字符串字面量
+
+```gdscript
+object.call_deferred("move_by", direction, callback)  # ❌ 应使用 &"move_by"
 ```
 
 ### 错误 5：用 get_parent() 访问场景根
