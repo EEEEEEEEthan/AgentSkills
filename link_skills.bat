@@ -1,7 +1,8 @@
 @echo off
 chcp 65001 >nul
 setlocal
-:: Create symlinks: .cursor/skills and .opencode/skills -> .agents/skills
+:: Create symlinks: .cursor/skills, .opencode/skills, .claude/skills, .trae/skills -> .agents/skills
+:: Only links if parent dir exists; skips if not
 set "ROOT=%~dp0..\.."
 cd /d "%ROOT%"
 
@@ -10,23 +11,20 @@ if not exist ".agents\skills" (
     exit /b 1
 )
 
-if not exist ".cursor" mkdir ".cursor"
-if not exist ".opencode" mkdir ".opencode"
-
 :: Symlinks may require admin or Developer Mode; use mklink /J for junction if needed
-if exist ".cursor\skills" (
-    echo [Skip] .cursor\skills already exists
-) else (
-    mklink /J ".cursor\skills" ".agents\skills"
-    if errorlevel 1 echo [Note] Run as admin or use junction
-)
-
-if exist ".opencode\skills" (
-    echo [Skip] .opencode\skills already exists
-) else (
-    mklink /J ".opencode\skills" ".agents\skills"
-    if errorlevel 1 echo [Note] Run as admin or use junction
+for %%D in (.cursor .opencode .claude .trae) do (
+    if exist "%%~D" (
+        if exist "%%~D\skills" (
+            echo [Skip] %%~D\skills already exists
+        ) else (
+            mklink /J "%%~D\skills" ".agents\skills"
+            if errorlevel 1 echo [Note] Run as admin or use junction
+        )
+    ) else (
+        echo [Skip] %%~D not found
+    )
 )
 
 echo Done.
+pause
 endlocal
