@@ -1,9 +1,25 @@
 ---
 name: godot-engine
-description: Godot 引擎使用与行为规范，在使用引擎对象、布局、尺寸、CallDeferred、process_frame、Engine.IsEditorHint 时使用
+description: Godot 引擎使用与行为规范，在使用引擎对象、布局、尺寸、InstancePlaceholder、CallDeferred、process_frame、Engine.IsEditorHint 时使用
 ---
 
 # Godot 引擎使用
+
+## InstancePlaceholder：create_instance 与 instantiate 的时机差异
+
+**问题**：`InstancePlaceholder.create_instance()` 会立即将实例加入场景树（替换 placeholder），从而触发 `_ready()`。若需在 `_ready` 前完成依赖注入（如 `inspector.bot = self`），此时注入尚未执行，`_ready` 内访问会得到 null。
+
+**正确做法**：用 `load(placeholder.get_instance_path()).instantiate()` 替代 `create_instance()`。`instantiate()` 创建节点但不加入树，可先完成注入再 `add_child()`，`_ready` 执行时依赖已就绪。
+
+**路径维护**：保留 placeholder 在场景中，用 `get_instance_path()` 动态获取路径。移动场景文件时，只需在编辑器中更新 placeholder 引用，优于硬编码 `preload("res://path.tscn")`。
+
+```gdscript
+# ✅ 正确：instantiate 不加入树，先注入再 add_child
+var placeholder: InstancePlaceholder = $BotInspector
+var inspector: Window = load(placeholder.get_instance_path()).instantiate()
+inspector.bot = self
+get_tree().root.add_child(inspector)
+```
 
 ## 布局刷新：同一帧内触发布局再读尺寸
 
