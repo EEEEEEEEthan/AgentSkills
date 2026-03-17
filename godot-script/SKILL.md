@@ -98,6 +98,20 @@ func _refresh_title():
 - 如果节点确实可能不存在（非 unique 节点），可以保留检查
 - 但应该使用 `get_node_or_null()` 并明确处理 null 情况
 
+### 4. call_deferred 使用 StringName
+
+**问题**：`call_deferred("method_name", args)` 使用字符串字面量，易拼写错误且无类型提示。
+
+**正确做法**：
+```gdscript
+# ✅ 使用 & 前缀生成 StringName，Godot 4 推荐用于方法名
+object.call_deferred(&"move_by", direction, callback)
+```
+
+**为什么重要**：
+- StringName 是 Godot 4 中方法名的推荐类型
+- `call_deferred` 必须传入方法名，无法直接传 Callable
+
 ## 实践模式
 
 ### 标准模式：导出属性 + 刷新函数
@@ -167,6 +181,7 @@ func _refresh_icon():
 - [ ] 是否移除了对 unique 节点的防御性检查？
 - [ ] 刷新函数是否直接访问节点（无 null 检查）？
 - [ ] 节点引用是否有正确的类型提示？
+- [ ] `call_deferred` 是否使用 `&"method_name"` 而非 `"method_name"`？
 
 ## 常见错误
 
@@ -207,6 +222,12 @@ func _refresh():
     var label = %Label
     if label:  # ❌ 错误：unique 节点应该始终存在
         label.text = text
+```
+
+### 错误 5：call_deferred 使用字符串字面量
+
+```gdscript
+object.call_deferred("move_by", direction, callback)  # ❌ 应使用 &"move_by"
 ```
 
 ## 总结
