@@ -98,7 +98,33 @@ func _refresh_title():
 - 如果节点确实可能不存在（非 unique 节点），可以保留检查
 - 但应该使用 `get_node_or_null()` 并明确处理 null 情况
 
-### 4. call_deferred 使用 StringName
+### 4. 成员声明顺序
+
+**原则**：字段 → 属性（含 getter/setter）→ 方法
+
+**正确示例**：
+```gdscript
+var _move_task: BotTaskMove
+var _cancel_flag: RefCounted
+
+var is_cancelled: bool:
+	get: return _move_task.aborted
+
+func _ready() -> void:
+	pass
+```
+
+**为什么重要**：统一顺序便于快速定位，属性依赖字段，方法依赖两者。
+
+### 5. 返回值风格：属性 vs 方法
+
+**原则**：
+- **返回固定值**：优先用属性（getter），如 `var is_cancelled: bool: get: return _move_task.aborted`
+- **每次获取新实例**：避免命名为 `get_xxx`，用 `new_xxx` 等，如 `new_bot_api()` 而非 `get_bot_api()`
+
+**为什么重要**：`get_xxx` 易被误解为返回缓存引用；属性更符合“读取状态”的语义。
+
+### 6. call_deferred 使用 StringName
 
 **问题**：`call_deferred("method_name", args)` 使用字符串字面量，易拼写错误且无类型提示。
 
@@ -175,6 +201,7 @@ func _refresh_icon():
 
 编写 Godot 脚本时，检查：
 
+- [ ] 成员顺序是否为：字段 → 属性 → 方法？
 - [ ] 导出属性的 setter 是否检查 `is_node_ready()`？
 - [ ] 是否在 `_ready()` 中刷新所有导出属性？
 - [ ] 是否使用 `@onready` 缓存所有节点引用？
