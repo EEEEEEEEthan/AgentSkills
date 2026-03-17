@@ -68,7 +68,24 @@ func _refresh_title():
 - 代码更清晰，明确表达节点依赖关系
 - 类型提示让 IDE 能提供更好的代码补全和检查
 
-### 3. 避免不必要的防御性代码
+### 3. 子节点访问场景根：用 owner 而非 get_parent()
+
+**问题**：子节点需要访问场景根（如 BotMain）时，用 `get_parent()` 会随层级变动而失效。
+
+**错误示例**：
+```gdscript
+# State 是 Bot 的子节点，需要访问 BotMain
+var bot_main = get_parent()  # ❌ 若 State 移到 StateMachine 下，parent 就变了
+```
+
+**正确做法**：
+```gdscript
+var bot_main = owner as Node2D  # ✅ owner 始终指向场景根，层级重构不受影响
+```
+
+**何时用**：子节点/组件需要访问所属场景的根节点时。
+
+### 4. 避免不必要的防御性代码
 
 **问题**：对 unique 节点添加 null 检查会掩盖问题，让调试变得困难。
 
@@ -164,6 +181,7 @@ func _refresh_icon():
 - [ ] 导出属性的 setter 是否检查 `is_node_ready()`？
 - [ ] 是否在 `_ready()` 中刷新所有导出属性？
 - [ ] 是否使用 `@onready` 缓存所有节点引用？
+- [ ] 子节点访问场景根时是否用 `owner` 而非 `get_parent()`？
 - [ ] 是否移除了对 unique 节点的防御性检查？
 - [ ] 刷新函数是否直接访问节点（无 null 检查）？
 - [ ] 节点引用是否有正确的类型提示？
@@ -209,10 +227,20 @@ func _refresh():
         label.text = text
 ```
 
+### 错误 5：用 get_parent() 访问场景根
+
+```gdscript
+# 子节点需要访问 BotMain
+var bot_main = get_parent()  # ❌ 层级变动（如移到 StateMachine 下）会失效
+```
+
+应使用 `owner as Node2D`。
+
 ## 总结
 
 遵循这些原则可以：
 - ✅ 确保属性在任何时机设置都能正确更新 UI
 - ✅ 提高代码性能（缓存节点引用）
+- ✅ 子节点访问场景根时层级重构不受影响（owner）
 - ✅ 让问题更容易暴露和调试
 - ✅ 代码更清晰、更易维护
