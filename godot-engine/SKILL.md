@@ -1,6 +1,6 @@
 ---
 name: godot-engine
-description: Godot 引擎使用与行为规范，在使用引擎对象、布局、尺寸、InstancePlaceholder、CallDeferred、process_frame、Engine.IsEditorHint 时使用
+description: Godot 引擎使用与行为规范
 ---
 
 # Godot 引擎使用
@@ -20,6 +20,37 @@ var inspector: Window = load(placeholder.get_instance_path()).instantiate()
 inspector.bot = self
 get_tree().root.add_child(inspector)
 ```
+
+## 防误改的tscn引用：子节点 Metadata（如 Config）
+
+**问题**：关键 `PackedScene` / 资源引用若只放在根节点 `@export`、或易被合并与手滑覆盖的位置，场景协作或反复编辑时可能被无意改掉。
+
+**做法**：为「不应被随便改掉」的引用建专用子节点（常见命名 **`Config`**），把引用写在**该子节点的 Metadata** 里（检视器 → 选中 `Config` → Metadata），由脚本 `get_node("%Config").get_meta("键", 默认值)` 或 `has_meta` 读取。
+
+**要点**：
+
+- 与节点绑定：Metadata 跟 `Config` 节点走，结构清晰，也便于在版本 diff 里单独辨认。
+- 可选：给 `Config` 设 `process_mode = PROCESS_MODE_DISABLED`，不参与运行时代码路径以外的逻辑。
+- 若需代码侧兜底，可在 `_ready` 里检测 `has_meta`，缺失时 `push_warning` 或回退到 `preload`。
+
+```gdscript
+# 示例：子弹场景引用存在 Config 子节点上
+const META_BULLET_SCENE := "bullet_scene"
+
+func _ready() -> void:
+	var config: Node = get_node("Config")
+	var bullet: PackedScene = config.get_meta(META_BULLET_SCENE) as PackedScene
+```
+
+**不适用**：需要频繁在检视器里拖拽替换、且不怕误改的普通 `@export`，仍可直接 export。
+
+## 场景内信号：优先在检视器连接
+
+**约定**：同一 `.tscn` 里、发射端与接收端都已存在的信号（如子节点 `Timer.timeout` → 根脚本方法），应在**检视器「节点」标签页的信号面板**里连接，并写入场景文件 `[connection ...]`，而不是在脚本的 `_ready()` 里 `signal.connect(Callable(...))`。
+
+**原因**：连接关系在场景里一眼可见、合并冲突时好 diff、改方法名时编辑器可提示断连；代码里隐式连接不利于协作与审查。
+
+**例外**：运行时动态创建节点、或连接目标依赖代码分支时，仍用代码连接。
 
 ## 布局刷新：同一帧内触发布局再读尺寸
 
