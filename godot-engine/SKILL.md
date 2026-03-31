@@ -1,25 +1,26 @@
 ---
 name: godot-engine
-description: Godot 引擎使用与行为规范
+description: Godot 引擎使用与行为规范。用于处理引擎对象生命周期、布局刷新、尺寸读取、InstancePlaceholder、CallDeferred、process_frame、Engine.IsEditorHint 与 C# 调用成本相关问题时。
 ---
 
 # Godot 引擎使用
 
-## InstancePlaceholder：create_instance 与 instantiate 的时机差异
+## 使用方式
 
-**问题**：`InstancePlaceholder.create_instance()` 会立即将实例加入场景树（替换 placeholder），从而触发 `_ready()`。若需在 `_ready` 前完成依赖注入（如 `inspector.bot = self`），此时注入尚未执行，`_ready` 内访问会得到 null。
+先读本文件，只拿总规则。
 
-**正确做法**：用 `load(placeholder.get_instance_path()).instantiate()` 替代 `create_instance()`。`instantiate()` 创建节点但不加入树，可先完成注入再 `add_child()`，`_ready` 执行时依赖已就绪。
+当任务落到具体问题时，再按需读取对应文档：
 
-**路径维护**：保留 placeholder 在场景中，用 `get_instance_path()` 动态获取路径。移动场景文件时，只需在编辑器中更新 placeholder 引用，优于硬编码 `preload("res://path.tscn")`。
+- `InstancePlaceholder`、依赖注入、`_ready()` 时机：见 [instance-placeholder.md](instance-placeholder.md)
+- 容器布局、尺寸读取、同帧刷新：见 [layout-refresh.md](layout-refresh.md)
+- `Engine.IsEditorHint()`、引擎属性访问、C# 调用成本：见 [csharp-api-cost.md](csharp-api-cost.md)
 
-```gdscript
-# ✅ 正确：instantiate 不加入树，先注入再 add_child
-var placeholder: InstancePlaceholder = $BotInspector
-var inspector: Window = load(placeholder.get_instance_path()).instantiate()
-inspector.bot = self
-get_tree().root.add_child(inspector)
-```
+## 总规则
+
+1. 涉及时序时，先确认节点是否已经进树，再决定是否能访问依赖或尺寸。
+2. 需要“本帧得到结果”时，优先显式触发布局或更新，不要默认拖到下一帧。
+3. 在 C# 中把引擎 API 当成高成本边界，避免重复读写。
+4. 默认优先稳定、可维护的路径与生命周期方案，避免依赖脆弱时机。
 
 ## 防误改的tscn引用：子节点 Metadata（如 Config）
 
@@ -54,21 +55,18 @@ func _ready() -> void:
 
 ## 布局刷新：同一帧内触发布局再读尺寸
 
-需要在本帧内拿到正确的布局或尺寸时：
+细则与做法见 [layout-refresh.md](layout-refresh.md)，与总规则第 2 条一致。
 
-1. **先触发布局**：对相关 Container 调用 `FlushLayout()`（C# 扩展）或 `queue_sort()` / 依赖引擎的排序机制，使排序与 `UpdateMinimumSize()` 在本帧内完成。
-2. **再读尺寸或执行逻辑**：在同一帧内调用 `GetCombinedMinimumSize()`、读取 `Size`/`Position` 或设置窗口位置等。
+## 快速分流
 
-**不要**为“等布局算好”而延迟到下一帧：禁用 `CallDeferred(nameof(UpdateLayout))`、`await get_tree().process_frame` 等，再在下一帧读尺寸或执行逻辑。
+### 场景一：placeholder 替身节点要先注入依赖
 
-**正确示例**（C#）：在 `UpdateWindowLayout()` 里先 `PanelContainer.FlushLayout()`，再 `PanelContainer.GetCombinedMinimumSize()`。
+不要急着 `create_instance()`，先看 [instance-placeholder.md](instance-placeholder.md)。
 
-## C# API 成本：少用引擎 API
+### 场景二：这帧就要读到正确尺寸或位置
 
-Godot 的 C# 绑定与引擎交互（P/Invoke）成本较高。应尽量减少对引擎属性的读写。
+不要先 `CallDeferred` 或 `await process_frame`，先看 [layout-refresh.md](layout-refresh.md)。
 
-**Engine.IsEditorHint()** 是昂贵调用，每次都会跨越托管/原生边界。若多处使用，应封装并缓存（用 `??=` 或类似方式首次求值后复用）。
+### 场景三：C# 逻辑里频繁访问引擎对象
 
-**适用场景**：每帧更新坐标、旋转等属性时，可做本地缓存，仅在值变化时写回引擎。
-
-**做法**：用属性封装，内部维护 `Vector3?` 等缓存字段；setter 内先 `if(cache == value) return`，再同时更新缓存和 `Node.Position`/`Camera.Rotation` 等。
+先检查是否能缓存、合并写回或减少跨边界调用，具体见 [csharp-api-cost.md](csharp-api-cost.md)。
