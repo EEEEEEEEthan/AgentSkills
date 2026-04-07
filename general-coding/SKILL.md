@@ -1,6 +1,6 @@
 ---
 name: general-coding
-description: 通用编码约定，如局部变量与循环变量必须完整命名、禁止单字母或缩写。在编写或审查 C#/GDScript 等代码时使用。
+description: 编码和审查时必读
 ---
 
 # 通用编码约定
