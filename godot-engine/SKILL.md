@@ -1,6 +1,6 @@
 ---
 name: godot-engine
-description: Godot 引擎使用与行为规范。用于处理引擎对象生命周期、布局刷新、尺寸读取、InstancePlaceholder、CallDeferred、process_frame、Engine.IsEditorHint 与 C# 调用成本相关问题时。
+description: Godot 引擎使用与行为规范
 ---
 
 # Godot 引擎使用

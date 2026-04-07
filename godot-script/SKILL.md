@@ -141,7 +141,24 @@ func _ready() -> void:
 
 **为什么重要**：`get_xxx` 易被误解为返回缓存引用；属性更符合“读取状态”的语义。
 
-### 6. call_deferred 使用 StringName
+### 6. 惰性资源：getter 与缓存成员同名（与 `audio_stream_beep` 一致）
+
+**原则**：懒加载 `AudioStream` / `Resource` 时，用**一条**与语义对应的 `var audio_stream_xxx`（或同类命名），在 getter 里 `if not audio_stream_xxx` 再加载并 `return audio_stream_xxx`，与项目中 `audio_stream_beep` 写法一致。
+
+**正确示例**：
+```gdscript
+var audio_stream_selection: AudioStream:
+	get:
+		if not audio_stream_selection:
+			audio_stream_selection = _load_audio_stream(&"res://audios/selection.wav")
+		return audio_stream_selection
+```
+
+**禁止**：在「选项 A」的 getter 里用「选项 B」的成员做 `if not` 或赋值（例如 selection 的 getter 里误写 `audio_stream_beep`），否则会在 B 已加载后永远不加载 A。
+
+**不推荐**：为同一资源再拆 `_backing` 字段，除非有明确理由；本仓库优先上述同名惰性成员风格。
+
+### 7. call_deferred 使用 StringName
 
 **问题**：`call_deferred("method_name", args)` 使用字符串字面量，易拼写错误且无类型提示。
 
@@ -226,6 +243,7 @@ func _refresh_icon():
 - [ ] 是否移除了对 unique 节点的防御性检查？
 - [ ] 刷新函数是否直接访问节点（无 null 检查）？
 - [ ] 节点引用是否有正确的类型提示？
+- [ ] 惰性加载资源是否采用「成员与 getter 同名」且每项只判断自己的成员？
 - [ ] `call_deferred` 是否使用 `&"method_name"` 而非 `"method_name"`？
 
 ## 常见错误
