@@ -18,6 +18,12 @@ description: c#编码技能,收录语法糖
 - 常见模式：`for (var i = n; i-- > 1;)` 覆盖 `n-1 … 1`；`for (var i = n; i-- > 0;)` 覆盖 `n-1 … 0`。可按需要把 `>` 换成 `>=`。
 - 第三段为空时写成 `for (init; condition;)`，分号保留。
 
+## 用 LINQ 收集下标再随机选一个
+
+- 需要「列表里所有满足条件的索引」时：`Enumerable.Range(0, list.Count).Where(index => list[index] == 目标值).ToList()`（需 `using System.Linq`）。
+- 从中随机取一个下标：`indices[rnd.Next(indices.Count)]`，再对原列表赋值或读取；`Count == 0` 时先跳过或分支。
+- 比手写两次循环更直观；会分配中间 `List`，极热路径可改回单次扫描 + 第 k 个命中。
+
 ## 维护规则
 
 - 只收短小、常用的糖，不扩成替代官方文档的教程。
