@@ -1,6 +1,6 @@
 ---
 name: godot-script
-description: Godot 脚本编写最佳实践，包括节点初始化时机、@onready 使用、避免防御性代码等。在编写 GDScript脚本时使用。
+description: Godot 脚本编写最佳实践
 ---
 
 # Godot 脚本最佳实践
