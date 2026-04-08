@@ -1,29 +1,25 @@
 ---
 name: csharp
-description: c#编码技能,收录语法糖
+description: c#编码技能,审查时必读,初次编码结束准备整理刚才的代码时必读
 ---
 
 # C# 语法糖
 
-## 原始字符串 `"""…"""`（C# 11+）
+多行原始字符串用 `"""` 定界（C# 11+），结束引号列决定每行去掉的公共前导空白
+[entries/csharp11-raw-string.md](entries/csharp11-raw-string.md)
 
-- 多行文本用三个双引号定界；换行原样进入字符串。
-- 结束定界符 `"""` 的缩进列决定「从每一行去掉的公共前导空白」（与结束引号对齐的那一段）。
-- 需要去掉首尾空白时对结果调用 `.Trim()`；单行可直接 `"""一行"""`。
-- 在 `switch` 表达式里可把 `=>` 单独换行后再写 `"""`，便于排版。
+`for (var i = n; i-- > 边界;)` 用后缀自减做递减下标，第三段可空
+[entries/for-decrement-loop.md](entries/for-decrement-loop.md)
 
-## `for (var i = n; i-- > 边界;)` 递减循环
+用 `Enumerable.Range` + `Where` 收集满足条件的下标再随机选，注意中间 `List` 分配与 `Count == 0`
+[entries/linq-indices-random.md](entries/linq-indices-random.md)
 
-- 条件中的 `i--` 为后缀自减：先用当前 `i` 与右侧比较，再把 `i` 减 1；进入循环体时 `i` 已是减过后的值。
-- 常见模式：`for (var i = n; i-- > 1;)` 覆盖 `n-1 … 1`；`for (var i = n; i-- > 0;)` 覆盖 `n-1 … 0`。可按需要把 `>` 换成 `>=`。
-- 第三段为空时写成 `for (init; condition;)`，分号保留。
+扩展成员用 `extension (T)` 块（C# 14+）；无额外参数时优先只读属性而非无参方法
+[entries/csharp14-extension-members.md](entries/csharp14-extension-members.md)
 
-## 用 LINQ 收集下标再随机选一个
+仅做直通存取且不需要额外逻辑时，优先自动属性；限制外部写入时用 `get; private set;`
+[entries/auto-property-preferred.md](entries/auto-property-preferred.md)
 
-- 需要「列表里所有满足条件的索引」时：`Enumerable.Range(0, list.Count).Where(index => list[index] == 目标值).ToList()`（需 `using System.Linq`）。
-- 从中随机取一个下标：`indices[rnd.Next(indices.Count)]`，再对原列表赋值或读取；`Count == 0` 时先跳过或分支。
-- 比手写两次循环更直观；会分配中间 `List`，极热路径可改回单次扫描 + 第 k 个命中。
+# 维护此文档
 
-## 维护规则
-
-- 只收短小、常用的糖，不扩成替代官方文档的教程。
+在「C# 语法糖」部分增加一句话摘要和 `entries/` 链接，在 `entries/` 下新增对应详述；只收短小常用条目，不扩成替代官方文档的教程。
