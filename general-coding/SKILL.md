@@ -1,6 +1,6 @@
 ---
 name: general-coding
-description: 通用编码技能,审查时必读,初次编码结束准备整理刚才的代码时必读
+description: 通用编码技能,审查时必读,编码结束时必读
 ---
 
 # 通用编码约定
