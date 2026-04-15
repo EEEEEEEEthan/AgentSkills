@@ -1,6 +1,6 @@
 ---
 name: csharp
-description: c#编码技能,审查时必读,初次编码结束准备整理刚才的代码时必读
+description: c#编码技能,审查时必读,编码结束时必读
 ---
 
 # C# 语法糖
