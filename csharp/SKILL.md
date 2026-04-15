@@ -20,6 +20,9 @@ description: c#编码技能,审查时必读,初次编码结束准备整理刚才
 仅做直通存取且不需要额外逻辑时，优先自动属性；限制外部写入时用 `get; private set;`
 [entries/auto-property-preferred.md](entries/auto-property-preferred.md)
 
+无参数、由状态推导的对外值优先只读属性（`public int X => ...`），而不是 `GetX()` 无参方法
+[entries/prefer-property-over-parameterless-method.md](entries/prefer-property-over-parameterless-method.md)
+
 可空引用类型（NRT）：可能为空标 `T?` 并在必要处分支；保证非空标 `T` 并用初始化或 `null!` 满足分析器，消费处不写冗余 `!= null`
 [entries/csharp-nullable-reference.md](entries/csharp-nullable-reference.md)
 
