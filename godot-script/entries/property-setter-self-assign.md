@@ -6,7 +6,7 @@
 
 ## 典型形态
 
-只写 setter 即可：读属性时走隐式后备，**getter 可省略**。
+只写 setter 即可：读属性时走隐式后备，**getter 可省略**，也**不必**再声明 `var _hp`——与同名赋值共用一套存储。
 
 ```gdscript
 var hp: int:
@@ -14,6 +14,20 @@ var hp: int:
 		hp = v
 		_refresh_ui()
 ```
+
+默认值写在属性上即可：
+
+```gdscript
+var active: bool = true:
+	set(value):
+		if active == value:
+			return
+		active = value
+		if is_node_ready():
+			_refresh_active()
+```
+
+setter 里读 `active` 仍是赋值前的当前值；`active = value` 写入隐式后备，不会递归进 setter。
 
 若需要自定义读取逻辑再补 `get`；不必为此单独搞 `_hp`，除非团队规范或构造期要绕开 `emit` 等另有考虑。
 

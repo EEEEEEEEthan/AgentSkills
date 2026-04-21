@@ -20,7 +20,7 @@ description: 编写gdscript必读
 成员顺序：字段 → 属性（含 getter/setter）→ 方法
 [entries/member-declaration-order.md](entries/member-declaration-order.md)
 
-属性 setter 内对同名赋值由引擎写入隐式后备属可靠语法；只写 setter 即可，getter 可省略
+属性 setter 内对同名赋值由引擎写入隐式后备存储；无自定义 getter 时不必再声明 `_x` 后备字段，只写 setter 即可
 [entries/property-setter-self-assign.md](entries/property-setter-self-assign.md)
 
 `RefCounted` 等数据类要在 setter 发信号或副作用时，用显式 `_backing` + getter/setter
