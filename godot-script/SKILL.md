@@ -5,6 +5,9 @@ description: 编写gdscript必读
 
 # Godot 脚本最佳实践
 
+新编写的代码请严格按照编码风格进行编码
+[entries/style-guide.md](entries/style-guide.md)
+
 挂在场景（tscn）上的脚本：导出属性若在 setter 里要访问子节点，须在 `is_node_ready()` 之后，并在 `_ready()` 统一同步到场景
 [entries/export-ready-scene-nodes.md](entries/export-ready-scene-nodes.md)
 
