@@ -5,6 +5,9 @@ description: 编写gdscript必读
 
 # Godot 脚本最佳实践
 
+每个 `@export`（及导出组内属性）须有紧邻的 `##` 文档注释，在检视器中悬停显示完整说明（用途、单位、约束）
+[entries/export-hover-hint.md](entries/export-hover-hint.md)
+
 挂在场景（tscn）上的脚本：导出属性若在 setter 里要访问子节点，须在 `is_node_ready()` 之后，并在 `_ready()` 统一同步到场景
 [entries/export-ready-scene-nodes.md](entries/export-ready-scene-nodes.md)
 
