@@ -5,6 +5,9 @@ description: 编写gdscript必读
 
 # Godot 脚本最佳实践
 
+新编写的代码请严格按照编码风格进行编码
+[entries/style-guide.md](entries/style-guide.md)
+
 每个 `@export`（及导出组内属性）须有紧邻的 `##` 文档注释，在检视器中悬停显示完整说明（用途、单位、约束）
 [entries/export-hover-hint.md](entries/export-hover-hint.md)
 
