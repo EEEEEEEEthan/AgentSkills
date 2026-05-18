@@ -16,10 +16,8 @@ func _refresh_title():
 ## 正确做法
 
 ```gdscript
-@onready var title_label: Label = %TitleLabel
-
 func _refresh_title():
-    title_label.text = title  # ✅ 缺失则立刻报错
+    %TitleLabel.text = title  # ✅ 缺失则立刻报错
 ```
 
 ## 例外

@@ -28,7 +28,7 @@ var active: bool = true:
 		_refresh_active()
 ```
 
-（若 `_refresh_active` 会写子节点，与导出属性相同，见 [export-ready-scene-nodes.md](export-ready-scene-nodes.md)。）
+（若 `_refresh_active` 会写子节点，setter 内 `await ready` 后用 `%`，见 [scene-property-setter-bridge.md](scene-property-setter-bridge.md)。）
 
 setter 里读 `active` 仍是赋值前的当前值；`active = value` 写入隐式后备，不会递归进 setter。
 
