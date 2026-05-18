@@ -23,13 +23,18 @@ var active: bool = true:
 		if active == value:
 			return
 		active = value
-		if is_node_ready():
-			_refresh_active()
+		if not is_node_ready():
+			await ready
+		_refresh_active()
 ```
+
+（若 `_refresh_active` 会写子节点，与导出属性相同，见 [export-ready-scene-nodes.md](export-ready-scene-nodes.md)。）
 
 setter 里读 `active` 仍是赋值前的当前值；`active = value` 写入隐式后备，不会递归进 setter。
 
 若需要自定义读取逻辑再补 `get`；不必为此单独搞 `_hp`，除非团队规范或构造期要绕开 `emit` 等另有考虑。
+
+场景脚本同步子控件时，常与 `await ready` 组合，见 [scene-property-setter-bridge.md](scene-property-setter-bridge.md)。
 
 ## 与显式 `_backing` 的关系
 

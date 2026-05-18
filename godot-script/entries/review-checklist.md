@@ -3,8 +3,7 @@
 编写或审查 GDScript 时可对照：
 
 - [ ] 成员顺序是否为：字段 → 属性 → 方法？
-- [ ] 导出属性的 setter 是否检查 `is_node_ready()`？
-- [ ] 是否在 `_ready()` 中刷新所有导出属性？
+- [ ] 导出属性的 setter 写子节点时，是否在同步前 `if not is_node_ready(): await ready`（必要时 `await` 子节点）？
 - [ ] 是否使用 `@onready` 缓存所需节点引用？
 - [ ] 子节点访问场景根时是否用 `owner` 而非 `get_parent()`？
 - [ ] 是否避免对「必有」的 unique 节点做多余 null 检查？

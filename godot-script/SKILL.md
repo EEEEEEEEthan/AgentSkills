@@ -8,11 +8,17 @@ description: 编写gdscript必读
 新编写的代码请严格按照编码风格进行编码
 [entries/style-guide.md](entries/style-guide.md)
 
-挂在场景（tscn）上的脚本：导出属性若在 setter 里要访问子节点，须在 `is_node_ready()` 之后，并在 `_ready()` 统一同步到场景
+挂在场景（tscn）上的脚本：导出 setter 若要写子节点，在 setter 内 `if not is_node_ready(): await ready` 再同步（必要时 `await` 子节点 `ready`），单路径覆盖初始值与后续修改
 [entries/export-ready-scene-nodes.md](entries/export-ready-scene-nodes.md)
+
+场景属性桥接（setter-only：先赋值、再 `await ready`、同步子节点；getter 可省略；不必在 `_ready` 重复刷新）
+[entries/scene-property-setter-bridge.md](entries/scene-property-setter-bridge.md)
 
 用 `@onready` 缓存 `%` 节点，避免每次刷新都重新查找
 [entries/onready-cache-percent.md](entries/onready-cache-percent.md)
+
+同一场景需多次生成的子场景（如子弹）：用树里 `InstancePlaceholder` + `create_instance()`（默认 `replace=false` 保留占位符）代替再 `@export PackedScene`；要换父节点时先 `remove_child` 再挂到目标根
+[entries/instance-placeholder-spawn.md](entries/instance-placeholder-spawn.md)
 
 子节点要访问所属场景根时用 `owner`，不要用 `get_parent()` 硬链
 [entries/owner-vs-get-parent.md](entries/owner-vs-get-parent.md)

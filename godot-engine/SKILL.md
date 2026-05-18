@@ -1,6 +1,6 @@
 ---
 name: godot-engine
-description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命周期、布局刷新、InstancePlaceholder、场景信号连接、CanvasItem 共享材质与 C# 引擎交互成本问题。
+description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命周期、布局刷新、帧上状态同步、InstancePlaceholder、场景信号连接、CanvasItem 共享材质与 C# 引擎交互成本问题。
 ---
 
 # Godot 引擎使用
@@ -15,6 +15,9 @@ description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命
 
 需要“本帧得到结果”时，优先显式触发布局或更新，不要默认拖到下一帧。
 [layout-refresh.md](layout-refresh.md)
+
+关键状态对齐不要长期绑在 `_process` 里“下一帧再改”；易错一帧并造成闪烁，应在数据变更处同步处理。
+[frame-state-vs-process.md](frame-state-vs-process.md)
 
 在 C# 中把引擎 API 当成高成本边界，优先缓存、合并写回并减少重复跨边界调用。
 [csharp-api-cost.md](csharp-api-cost.md)
