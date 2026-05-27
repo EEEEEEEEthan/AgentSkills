@@ -1,7 +1,7 @@
 ---
 name: lead-programmer
 description: >-
-  收到新需求/bug时使用
+  收到新需求或者bug或者需要对工程文件做出任何修改时使用
 ---
 
 # 主程预审
