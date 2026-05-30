@@ -31,6 +31,9 @@ description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命
 CanvasItem shader 想共享材质时，不要把 `sampler2D` 当作 `instance uniform`；改用节点自带纹理通道或别的共享承载方式。
 [canvas-item-shared-material-textures.md](canvas-item-shared-material-textures.md)
 
+独立子窗口关闭垂直同步时，交换链可能短暂呈现旧帧，表现为相机/画面被拉回；与 Camera2D clear 无关，优先检查 VSync。
+[vsync-subwindow-render-snapback.md](vsync-subwindow-render-snapback.md)
+
 # 维护此文档
 
 在索引部分增加一句话描述和文档链接，并在同目录新增对应的详细说明文档。
