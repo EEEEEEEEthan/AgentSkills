@@ -1,6 +1,6 @@
 ---
 name: godot-engine
-description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命周期、布局刷新、帧上状态同步、InstancePlaceholder、场景信号连接、CanvasItem 共享材质与 C# 引擎交互成本问题。
+description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命周期、布局刷新、帧上状态同步、InstancePlaceholder、场景嵌入脚本、场景信号连接、CanvasItem 共享材质与 C# 引擎交互成本问题。
 ---
 
 # Godot 引擎使用
@@ -24,6 +24,9 @@ description: Godot 引擎使用与行为规范。用于处理 Godot 节点生命
 
 不应被随手改掉的关键场景资源引用，优先放到子节点 Metadata，而不是根节点普通 `@export`。
 [config-metadata.md](config-metadata.md)
+
+新脚本能嵌入就用嵌入；只服务单场景的胶水逻辑写在 `.tscn` 的 `script/source`，并避免参数名遮蔽引擎成员。
+[embedded-scene-script.md](embedded-scene-script.md)
 
 同一 `.tscn` 内两端都已存在的静态信号，优先在检视器里连接并写入场景文件。
 [scene-signals-inspector.md](scene-signals-inspector.md)
