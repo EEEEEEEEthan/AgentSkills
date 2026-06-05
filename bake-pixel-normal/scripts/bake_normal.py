@@ -1,37 +1,34 @@
 #!/usr/bin/env python3
-"""从 diffuse PNG 烘焙像素法线贴图，颜色量化到 GIMP 调色板。"""
+"""从 diffuse PNG 烘焙像素法线贴图，颜色量化到法线球调色板最近色。"""
 from __future__ import annotations
 
 import argparse
 import math
 from pathlib import Path
 
-from PIL import Image, ImageFilter
+from PIL import Image
 
 
-def load_gpl(path: Path) -> list[tuple[int, int, int, int]]:
-    colors: list[tuple[int, int, int, int]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or line.startswith("GIMP") or line.startswith("Channels"):
-            continue
-        parts = line.split()
-        if len(parts) < 4:
-            continue
-        colors.append(tuple(map(int, parts[:4])))
-    if not colors:
+def load_palette_from_sphere(path: Path) -> list[tuple[int, int, int, int]]:
+    sphere = Image.open(path).convert("RGBA")
+    palette = sorted(set(sphere.getdata()))
+    if not palette:
         raise ValueError(f"调色板为空: {path}")
-    return colors
+    return palette
 
 
-def pick_flat_colors(palette: list[tuple[int, int, int, int]]) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]]:
-    opaque = next((c for c in palette if c[:3] == (128, 128, 255) and c[3] == 255), None)
-    transparent = next((c for c in palette if c[:3] == (128, 128, 255) and c[3] == 0), None)
-    if opaque is None:
-        opaque = next(c for c in palette if c[3] == 255)
-    if transparent is None:
-        transparent = opaque
-    return opaque, transparent
+def pick_flat_colors() -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]]:
+    return (128, 128, 255, 255), (128, 128, 255, 0)
+
+
+def dist_to_transparent(px, w: int, h: int, x: int, y: int, dx: int, dy: int, limit: int) -> int:
+    for step in range(1, limit + 1):
+        nx, ny = x + dx * step, y + dy * step
+        if nx < 0 or nx >= w or ny < 0 or ny >= h:
+            return limit + 1
+        if px[nx, ny][3] == 0:
+            return step
+    return limit + 1
 
 
 def nearest_palette(rgb: tuple[int, int, int], palette: list[tuple[int, int, int, int]]) -> tuple[int, int, int, int]:
@@ -45,28 +42,37 @@ def nearest_palette(rgb: tuple[int, int, int], palette: list[tuple[int, int, int
     return best
 
 
-def sample_height(height: Image.Image, x: int, y: int) -> float:
-    w, h = height.size
-    x = max(0, min(w - 1, x))
-    y = max(0, min(h - 1, y))
-    return height.getpixel((x, y)) / 255.0
+def quantize_normal(
+    nx: float,
+    ny: float,
+    nz: float,
+    palette: list[tuple[int, int, int, int]],
+    flat_threshold: float,
+    flat_opaque: tuple[int, int, int, int],
+) -> tuple[int, int, int, int]:
+    if abs(nx) < flat_threshold and abs(ny) < flat_threshold:
+        return flat_opaque
+    rgb = (
+        int((nx * 0.5 + 0.5) * 255),
+        int((ny * 0.5 + 0.5) * 255),
+        int((nz * 0.5 + 0.5) * 255),
+    )
+    return nearest_palette(rgb, palette)
 
 
 def bake(
     diffuse_path: Path,
     output_path: Path,
-    gpl_path: Path,
-    blur_radius: float,
-    sample_span: int,
+    sphere_path: Path,
+    max_dist: int,
     strength: float,
+    flat_threshold: float,
 ) -> None:
-    palette = load_gpl(gpl_path)
-    flat_opaque, flat_transparent = pick_flat_colors(palette)
+    palette = load_palette_from_sphere(sphere_path)
+    flat_opaque, flat_transparent = pick_flat_colors()
 
     img = Image.open(diffuse_path).convert("RGBA")
     w, h = img.size
-    alpha = img.split()[3]
-    height = alpha.filter(ImageFilter.GaussianBlur(blur_radius))
     px = img.load()
 
     normal = Image.new("RGBA", (w, h), flat_transparent)
@@ -76,38 +82,40 @@ def bake(
         for x in range(w):
             if px[x, y][3] == 0:
                 continue
-            h_l = sample_height(height, x - sample_span, y)
-            h_r = sample_height(height, x + sample_span, y)
-            h_u = sample_height(height, x, y - sample_span)
-            h_d = sample_height(height, x, y + sample_span)
-            dx = (h_l - h_r) / (2.0 * sample_span) * strength
-            dy = (h_u - h_d) / (2.0 * sample_span) * strength
-            nz = 1.0
-            length = math.sqrt(dx * dx + dy * dy + nz * nz)
-            nx, ny, nz = dx / length, dy / length, nz / length
-            rgb = (
-                int((nx * 0.5 + 0.5) * 255),
-                int((ny * 0.5 + 0.5) * 255),
-                int((nz * 0.5 + 0.5) * 255),
-            )
-            c = nearest_palette(rgb, palette)
-            npx[x, y] = c if c[3] else flat_opaque
+            up = dist_to_transparent(px, w, h, x, y, 0, -1, max_dist)
+            down = dist_to_transparent(px, w, h, x, y, 0, 1, max_dist)
+            left = dist_to_transparent(px, w, h, x, y, -1, 0, max_dist)
+            right = dist_to_transparent(px, w, h, x, y, 1, 0, max_dist)
+            tx = (left - right) / max_dist * strength
+            ty = (down - up) / max_dist * strength
+            length = math.sqrt(tx * tx + ty * ty + 1.0)
+            nx, ny, nz = tx / length, ty / length, 1.0 / length
+            npx[x, y] = quantize_normal(nx, ny, nz, palette, flat_threshold, flat_opaque)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     normal.save(output_path)
-    print(f"baked {w}x{h} -> {output_path} (blur={blur_radius}, span={sample_span}, strength={strength})")
+    print(
+        f"baked {w}x{h} -> {output_path} "
+        f"(palette={len(palette)} from {sphere_path.name}, max_dist={max_dist}, "
+        f"strength={strength}, flat={flat_threshold})"
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="烘焙像素法线贴图")
     parser.add_argument("diffuse", type=Path, help="diffuse PNG 路径")
     parser.add_argument("-o", "--output", type=Path, required=True, help="输出法线 PNG 路径")
-    parser.add_argument("-p", "--palette", type=Path, default=Path("normal.gpl"), help="GIMP 调色板路径")
-    parser.add_argument("-b", "--blur", type=float, default=10.0, help="高度场高斯模糊半径")
-    parser.add_argument("-s", "--span", type=int, default=6, help="梯度采样跨度（像素）")
-    parser.add_argument("--strength", type=float, default=4.0, help="坡度强度倍率")
+    parser.add_argument(
+        "--sphere",
+        type=Path,
+        default=Path("normal_sphere_4.png"),
+        help="法线球图，仅提取其像素色作为量化调色板（不做 UV 采样）",
+    )
+    parser.add_argument("-d", "--max-dist", type=int, default=16, help="边界距离探测半径（像素）")
+    parser.add_argument("--strength", type=float, default=2.5, help="坡度强度倍率")
+    parser.add_argument("--flat", type=float, default=0.25, help="低于此坡度视为平面 (128,128,255)")
     args = parser.parse_args()
-    bake(args.diffuse, args.output, args.palette, args.blur, args.span, args.strength)
+    bake(args.diffuse, args.output, args.sphere, args.max_dist, args.strength, args.flat)
 
 
 if __name__ == "__main__":

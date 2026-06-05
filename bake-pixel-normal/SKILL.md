@@ -17,28 +17,32 @@ description: 从像素 diffuse 贴图烘焙 2D 法线贴图，颜色仅使用 GI
 脚本路径：`~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py`
 
 ```bash
-python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> -p <palette.gpl>
+python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> --sphere normal_sphere.png
 ```
 
 依赖：`pillow`（`pip install pillow`）
 
 ## 算法
 
-1. 用 diffuse 的 **alpha 通道** 作为高度场（不透明=高，透明=低）
-2. 对高度场做 **高斯模糊**，控制过渡带宽度
-3. 在模糊后的高度场上按 **采样跨度** 求梯度，得到法线向量
-4. 将 RGB 量化到调色板最近色；透明像素用 `(128,128,255,0)`，实体内部平面用 `(128,128,255,255)`
+1. 对每个不透明像素，向上下左右探测到**图内**透明边的距离（`--max-dist` 为半径）；**出界视为无轮廓，不算透明**
+2. 用法线指向最近透明边界：`tx = left-right`，`ty = down-up`（**朝上 ty 为正 → 高 G**）
+3. 归一化 `(tx, ty, 1)` 得 `(nx, ny, nz)`，转 RGB：`(nx*0.5+0.5)*255` 等
+4. 从 **法线球图**（`normal_sphere_4.png` / `normal_sphere.png`）**提取全部像素色**作为调色板，在 RGB 空间找**最近色**
+   - **禁止**按球图坐标 `(col,row)` 采样像素
+   - `|nx|`、`|ny|` 均低于 `--flat` 时用 `(128,128,255,255)`；透明像素用 `(128,128,255,0)`
+5. 4×4 球色更少 → 梯度层级更少；8×8 球色更多 → 更细腻
 
 ## 参数调优
 
 | 参数 | 默认 | 效果 |
 |------|------|------|
-| `--blur` | 10 | 越大，轮廓法线过渡带越宽 |
-| `--span` | 6 | 梯度采样距离，配合 blur 控制坡度平滑度 |
-| `--strength` | 4.0 | 坡度强度；过大易饱和到调色板极端色 |
+| `--max-dist` | 16 | 越大，过渡带越宽、坡度越缓 |
+| `--strength` | 2.5 | 坡度强度；过大易饱和到球表边缘格 |
+| `--flat` | 0.25 | 低于此坡度视为朝相机平面 |
+| `--sphere` | normal_sphere_4.png | 法线球图（仅作调色板来源）；要更少梯度用 4×4 |
 
-用户说「过渡太窄」→ 增大 `--blur` 和/或 `--span`。  
-用户说「过渡太宽/太软」→ 减小二者。
+用户说「减少梯度」→ 用 4×4 球 + 降低 `--strength`、提高 `--flat` / `--max-dist`。  
+用户说「更陡」→ 用 8×8 球 + 增大 `--strength`。
 
 ## Godot 接入要点
 
