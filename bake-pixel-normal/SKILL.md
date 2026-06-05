@@ -17,8 +17,20 @@ description: 从像素 diffuse 贴图烘焙 2D 法线贴图，颜色仅使用 GI
 脚本路径：`~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py`
 
 ```bash
-python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> --sphere normal_sphere.png
+# 默认 4×4 法线球（少梯度）
+python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png>
+
+# 8×8 法线球（更细腻）
+python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> --lut 8
+
+# 项目内自定义法线球
+python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> --sphere path/to/sphere.png
 ```
+
+内置法线球（技能目录）：
+- `--lut 4` → `normal_sphere_4.png`
+- `--lut 8` → `normal_sphere.png`
+- `--sphere` 指定路径时覆盖 `--lut`
 
 依赖：`pillow`（`pip install pillow`）
 
@@ -39,10 +51,12 @@ python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -
 | `--max-dist` | 16 | 越大，过渡带越宽、坡度越缓 |
 | `--strength` | 2.5 | 坡度强度；过大易饱和到球表边缘格 |
 | `--flat` | 0.25 | 低于此坡度视为朝相机平面 |
-| `--sphere` | normal_sphere_4.png | 法线球图（仅作调色板来源）；要更少梯度用 4×4 |
+| `--lut` | `4` | 内置法线球：`4` 少梯度，`8` 细腻 |
+| `--sphere` | （无） | 自定义法线球路径，覆盖 `--lut` |
 
-用户说「减少梯度」→ 用 4×4 球 + 降低 `--strength`、提高 `--flat` / `--max-dist`。  
-用户说「更陡」→ 用 8×8 球 + 增大 `--strength`。
+用户说「减少梯度」→ `--lut 4` + 降低 `--strength`、提高 `--flat` / `--max-dist`。  
+用户说「更细腻」→ `--lut 8`。  
+用户说「更陡」→ 增大 `--strength`。
 
 ## Godot 接入要点
 
@@ -63,7 +77,7 @@ Sprite2D.region_rect = 裁切区域 Rect2
 ```
 任务进度：
 - [ ] 确认 diffuse 已保存
-- [ ] 运行 bake_normal.py（路径、调色板按当前项目填写）
+- [ ] 选择 `--lut 4` 或 `--lut 8`（或 `--sphere` 自定义），运行 bake_normal.py
 - [ ] 若场景 region_rect 与图集行高不一致，同步 .tscn
 - [ ] Godot 重开或重新导入贴图验证光照
 ```

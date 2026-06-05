@@ -8,6 +8,21 @@ from pathlib import Path
 
 from PIL import Image
 
+_SKILL_DIR = Path(__file__).resolve().parent.parent
+SPHERE_PRESETS: dict[str, Path] = {
+    "4": _SKILL_DIR / "normal_sphere_4.png",
+    "8": _SKILL_DIR / "normal_sphere.png",
+}
+DEFAULT_LUT = "4"
+
+
+def resolve_sphere_path(lut: str, sphere: Path | None) -> Path:
+    if sphere is not None:
+        return sphere
+    if lut not in SPHERE_PRESETS:
+        raise ValueError(f"未知法线球预设: {lut}，可选 {', '.join(SPHERE_PRESETS)}")
+    return SPHERE_PRESETS[lut]
+
 
 def load_palette_from_sphere(path: Path) -> list[tuple[int, int, int, int]]:
     sphere = Image.open(path).convert("RGBA")
@@ -106,16 +121,23 @@ def main() -> None:
     parser.add_argument("diffuse", type=Path, help="diffuse PNG 路径")
     parser.add_argument("-o", "--output", type=Path, required=True, help="输出法线 PNG 路径")
     parser.add_argument(
+        "--lut",
+        choices=sorted(SPHERE_PRESETS),
+        default=DEFAULT_LUT,
+        help="内置法线球：4=normal_sphere_4（少梯度），8=normal_sphere（细腻）",
+    )
+    parser.add_argument(
         "--sphere",
         type=Path,
-        default=Path("normal_sphere_4.png"),
-        help="法线球图，仅提取其像素色作为量化调色板（不做 UV 采样）",
+        default=None,
+        help="自定义法线球路径；指定后覆盖 --lut",
     )
     parser.add_argument("-d", "--max-dist", type=int, default=16, help="边界距离探测半径（像素）")
     parser.add_argument("--strength", type=float, default=2.5, help="坡度强度倍率")
     parser.add_argument("--flat", type=float, default=0.25, help="低于此坡度视为平面 (128,128,255)")
     args = parser.parse_args()
-    bake(args.diffuse, args.output, args.sphere, args.max_dist, args.strength, args.flat)
+    sphere_path = resolve_sphere_path(args.lut, args.sphere)
+    bake(args.diffuse, args.output, sphere_path, args.max_dist, args.strength, args.flat)
 
 
 if __name__ == "__main__":
