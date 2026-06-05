@@ -26,7 +26,7 @@ def resolve_sphere_path(lut: str, sphere: Path | None) -> Path:
 
 def load_palette_from_sphere(path: Path) -> list[tuple[int, int, int, int]]:
     sphere = Image.open(path).convert("RGBA")
-    palette = sorted(set(sphere.getdata()))
+    palette = sorted(set(sphere.get_flattened_data()))
     if not palette:
         raise ValueError(f"调色板为空: {path}")
     return palette
@@ -57,6 +57,52 @@ def nearest_palette(rgb: tuple[int, int, int], palette: list[tuple[int, int, int
     return best
 
 
+def _hash2f(x: int, y: int, seed: int) -> float:
+    n = (x * 374761393 + y * 668265263 + seed * 982451653) & 0xFFFFFFFF
+    n ^= n >> 13
+    n = (n * 1274126177) & 0xFFFFFFFF
+    n ^= n >> 16
+    return n / 0xFFFFFFFF
+
+
+def _smoothstep(t: float) -> float:
+    return t * t * (3.0 - 2.0 * t)
+
+
+def value_noise(x: float, y: float, seed: int) -> float:
+    x0 = int(math.floor(x))
+    y0 = int(math.floor(y))
+    tx = _smoothstep(x - x0)
+    ty = _smoothstep(y - y0)
+    v00 = _hash2f(x0, y0, seed)
+    v10 = _hash2f(x0 + 1, y0, seed)
+    v01 = _hash2f(x0, y0 + 1, seed)
+    v11 = _hash2f(x0 + 1, y0 + 1, seed)
+    a = v00 + (v10 - v00) * tx
+    b = v01 + (v11 - v01) * tx
+    return (a + (b - a) * ty) * 2.0 - 1.0
+
+
+def perturb_normal(
+    nx: float,
+    ny: float,
+    nz: float,
+    x: int,
+    y: int,
+    noise: float,
+    noise_scale: float,
+    noise_seed: int,
+) -> tuple[float, float, float]:
+    if noise <= 0.0:
+        return nx, ny, nz
+    jx = value_noise(x * noise_scale, y * noise_scale, noise_seed)
+    jy = value_noise(x * noise_scale + 31.7, y * noise_scale + 17.3, noise_seed + 1)
+    nx += jx * noise
+    ny += jy * noise
+    length = math.sqrt(nx * nx + ny * ny + nz * nz)
+    return nx / length, ny / length, nz / length
+
+
 def quantize_normal(
     nx: float,
     ny: float,
@@ -82,6 +128,9 @@ def bake(
     max_dist: int,
     strength: float,
     flat_threshold: float,
+    noise: float,
+    noise_scale: float,
+    noise_seed: int,
 ) -> None:
     palette = load_palette_from_sphere(sphere_path)
     flat_opaque, flat_transparent = pick_flat_colors()
@@ -105,6 +154,7 @@ def bake(
             ty = (down - up) / max_dist * strength
             length = math.sqrt(tx * tx + ty * ty + 1.0)
             nx, ny, nz = tx / length, ty / length, 1.0 / length
+            nx, ny, nz = perturb_normal(nx, ny, nz, x, y, noise, noise_scale, noise_seed)
             npx[x, y] = quantize_normal(nx, ny, nz, palette, flat_threshold, flat_opaque)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -112,7 +162,8 @@ def bake(
     print(
         f"baked {w}x{h} -> {output_path} "
         f"(palette={len(palette)} from {sphere_path.name}, max_dist={max_dist}, "
-        f"strength={strength}, flat={flat_threshold})"
+        f"strength={strength}, flat={flat_threshold}, noise={noise}, "
+        f"noise_scale={noise_scale}, seed={noise_seed})"
     )
 
 
@@ -133,11 +184,24 @@ def main() -> None:
         help="自定义法线球路径；指定后覆盖 --lut",
     )
     parser.add_argument("-d", "--max-dist", type=int, default=16, help="边界距离探测半径（像素）")
-    parser.add_argument("--strength", type=float, default=2.5, help="坡度强度倍率")
+    parser.add_argument("--strength", type=float, default=0.8, help="坡度强度倍率")
     parser.add_argument("--flat", type=float, default=0.25, help="低于此坡度视为平面 (128,128,255)")
+    parser.add_argument("--noise", type=float, default=0.15, help="法线噪声扰动强度，0 为关闭")
+    parser.add_argument("--noise-scale", type=float, default=0.55, help="噪声空间频率，越小变化越平缓")
+    parser.add_argument("--noise-seed", type=int, default=0, help="噪声种子")
     args = parser.parse_args()
     sphere_path = resolve_sphere_path(args.lut, args.sphere)
-    bake(args.diffuse, args.output, sphere_path, args.max_dist, args.strength, args.flat)
+    bake(
+        args.diffuse,
+        args.output,
+        sphere_path,
+        args.max_dist,
+        args.strength,
+        args.flat,
+        args.noise,
+        args.noise_scale,
+        args.noise_seed,
+    )
 
 
 if __name__ == "__main__":

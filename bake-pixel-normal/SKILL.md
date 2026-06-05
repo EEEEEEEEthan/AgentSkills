@@ -1,6 +1,6 @@
 ---
 name: bake-pixel-normal
-description: 从像素 diffuse 贴图烘焙 2D 法线贴图，颜色仅使用 GIMP 调色板（如 normal.gpl）中的条目。用于用户要求烘焙/重烘焙法线贴图、扩大法线过渡范围、或处理山体/剪影类 CanvasTexture 资产时。
+description: 从像素 diffuse 贴图烘焙 2D 法线贴图，颜色量化到法线球调色板最近色，可选噪声扰动。用于用户要求烘焙/重烘焙法线贴图、扩大法线过渡范围、扰乱法线细节、或处理山体/剪影类 CanvasTexture 资产时。
 ---
 
 # 烘焙像素法线贴图
@@ -25,6 +25,9 @@ python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -
 
 # 项目内自定义法线球
 python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> --sphere path/to/sphere.png
+
+# 关闭噪声
+python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -o <normal.png> --noise 0
 ```
 
 内置法线球（技能目录）：
@@ -38,25 +41,30 @@ python ~/.agents/skills/bake-pixel-normal/scripts/bake_normal.py <diffuse.png> -
 
 1. 对每个不透明像素，向上下左右探测到**图内**透明边的距离（`--max-dist` 为半径）；**出界视为无轮廓，不算透明**
 2. 用法线指向最近透明边界：`tx = left-right`，`ty = down-up`（**朝上 ty 为正 → 高 G**）
-3. 归一化 `(tx, ty, 1)` 得 `(nx, ny, nz)`，转 RGB：`(nx*0.5+0.5)*255` 等
-4. 从 **法线球图**（`normal_sphere_4.png` / `normal_sphere.png`）**提取全部像素色**作为调色板，在 RGB 空间找**最近色**
+3. 归一化 `(tx, ty, 1)` 得 `(nx, ny, nz)`
+4. 可选：用 2D value noise 扰动 `(nx, ny)` 后重新归一化（`--noise` / `--noise-scale` / `--noise-seed`）
+5. 转 RGB：`(nx*0.5+0.5)*255` 等，从 **法线球图** **提取全部像素色**作为调色板，在 RGB 空间找**最近色**
    - **禁止**按球图坐标 `(col,row)` 采样像素
    - `|nx|`、`|ny|` 均低于 `--flat` 时用 `(128,128,255,255)`；透明像素用 `(128,128,255,0)`
-5. 4×4 球色更少 → 梯度层级更少；8×8 球色更多 → 更细腻
+6. 4×4 球色更少 → 梯度层级更少；8×8 球色更多 → 更细腻
 
 ## 参数调优
 
 | 参数 | 默认 | 效果 |
 |------|------|------|
 | `--max-dist` | 16 | 越大，过渡带越宽、坡度越缓 |
-| `--strength` | 2.5 | 坡度强度；过大易饱和到球表边缘格 |
+| `--strength` | 0.8 | 坡度强度；过大易饱和到球表边缘格 |
 | `--flat` | 0.25 | 低于此坡度视为朝相机平面 |
 | `--lut` | `4` | 内置法线球：`4` 少梯度，`8` 细腻 |
 | `--sphere` | （无） | 自定义法线球路径，覆盖 `--lut` |
+| `--noise` | `0.15` | 法线噪声扰动强度；`0` 关闭 |
+| `--noise-scale` | `0.55` | 噪声频率，越小斑块越大 |
+| `--noise-seed` | `0` | 噪声种子，可复现 |
 
 用户说「减少梯度」→ `--lut 4` + 降低 `--strength`、提高 `--flat` / `--max-dist`。  
 用户说「更细腻」→ `--lut 8`。  
-用户说「更陡」→ 增大 `--strength`。
+用户说「更陡」→ 增大 `--strength`。  
+用户说「减少/关闭噪声」→ `--noise 0`。
 
 ## Godot 接入要点
 
