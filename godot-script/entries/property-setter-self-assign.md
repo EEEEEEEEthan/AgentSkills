@@ -38,7 +38,7 @@ setter 里读 `active` 仍是赋值前的当前值；`active = value` 写入隐�
 
 ## 与显式 `_backing` 的关系
 
-仍可选用 `var _hp` + getter/setter（见 [refcounted-backing-properties.md](refcounted-backing-properties.md)），常见动机是：**构造阶段少发信号**、命名更清晰、或与团队规范统一——**不是因为**「setter 里写 `hp = v` 不可靠」。
+Node 与 `Resource` / `RefCounted` **默认都不要**显式 `_backing`。仅当必须绕过 setter（如 `_init` 少 `emit`）时才用，见 [refcounted-backing-properties.md](refcounted-backing-properties.md)——**不是因为**「setter 里写 `hp = v` 不可靠」。
 
 ## 排查问题时
 

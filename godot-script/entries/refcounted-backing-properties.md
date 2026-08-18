@@ -1,42 +1,37 @@
-# 数据模型：显式后备字段 + getter/setter
+# Resource / RefCounted：同样不必显式后备字段
 
-## 场景
+## 结论
 
-`RefCounted` / 纯数据类（非 Node）中，写入时需要发信号、校验或统一副作用；与节点上 `@export` 依赖引擎隐式存储的写法区分开。
+`Resource`、`RefCounted` 等数据类与 Node 一样：setter 里对同名属性赋值写入**隐式后备存储**，**不会**递归进 setter。发 `emit_changed()` / 自定义信号时，**默认只写 setter、省略 getter，不要**再声明 `_x`。
 
-setter 里写 `value = v` 本身在 GDScript 中**合法且可靠**（见 [property-setter-self-assign.md](property-setter-self-assign.md)）；此处显式 `_value` 多为**构造期少 `emit`**、可读性或规范，而非否定自赋值语法。
+见 [property-setter-self-assign.md](property-setter-self-assign.md)。
 
-## 正确做法（与仓库 `game/character/property.gd` 一致）
+## 推荐写法
 
 ```gdscript
-var _value: float
+@export var team_alm: TeamData = TeamData.new():
+	set(value):
+		if team_alm == value:
+			return
+		team_alm = value
+		emit_changed()
+```
 
-var value: float:
-	get:
-		return _value
+```gdscript
+var value: float = 0.0:
 	set(v):
-		_value = v
+		if value == v:
+			return
+		value = v
 		changed.emit()
 ```
 
-## 要点
+## 何时才用显式 `_backing`
 
-- 实际数据放在 `_value`、`_max_value` 等后备字段；对外 `value` 负责入口与副作用。
-- `_init` 里若不想构造阶段反复 `emit`，可直接写 `_value = v`。
-
-## 与 Node `@export` 的区别
-
-节点脚本里常见 `set(x): title = x` 配合隐式存储；**数据类**要明确「存哪、何时发信号」时，优先显式 `_backing` + getter/setter。
-
-## 完整示例：可观察数值
+仅当**必须绕过 setter** 写存储时（例如 `_init` 里不想触发 `emit`），才用 `_value` + getter/setter。这是例外，不是数据类默认规范。
 
 ```gdscript
-class_name ExampleStat
-
-signal changed
-
 var _value: float
-var _max_value: float
 
 var value: float:
 	get:
@@ -45,14 +40,6 @@ var value: float:
 		_value = v
 		changed.emit()
 
-var max_value: float:
-	get:
-		return _max_value
-	set(v):
-		_max_value = v
-		changed.emit()
-
-func _init(v: float, max_v: float) -> void:
-	_value = v
-	_max_value = max_v
+func _init(v: float) -> void:
+	_value = v  # 绕过 setter，构造期不 emit
 ```

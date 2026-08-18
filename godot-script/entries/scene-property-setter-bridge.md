@@ -49,7 +49,7 @@ var value: float:
 
 - 在 `_ready` 里再写 `%Label.text = label_text`（与 setter 重复，改一处易漏另一处）。
 - setter 里**先**访问 `%` 子节点、**后** `await ready`（编辑器实例化阶段会失败）。
-- 为桥接单独写 getter + `_backing`（除非 `RefCounted` 等，见 [refcounted-backing-properties.md](refcounted-backing-properties.md)）。
+- 为桥接单独写 getter + `_backing`（默认不需要；仅构造期绕过 setter 等例外见 [refcounted-backing-properties.md](refcounted-backing-properties.md)）。
 
 ## 关联
 
