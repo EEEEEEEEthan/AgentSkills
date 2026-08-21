@@ -7,9 +7,8 @@ description: 当需要给任何东西命名时必读
 
 ## 核心原则
 
-1. **使用英文命名**：所有标识符（类、方法、变量、属性、常量、字段）都使用英文
-2. **命名要准确反映用途**：命名必须精确描述其功能或含义，不能有歧义
-3. **鼓励长命名**：为了提高可读性，优先使用描述性强的长命名，不要为了简短而牺牲清晰度
+1. **命名要准确反映用途**：命名必须精确描述其功能或含义，不能有歧义
+2. **鼓励长命名**：为了提高可读性，优先使用描述性强的长命名，不要为了简短而牺牲清晰度
 
 ## 命名规则
 
@@ -23,7 +22,6 @@ description: 当需要给任何东西命名时必读
 
 - ✅ 命名准确描述了用途，没有歧义
 - ✅ 命名足够具体，不会与其他概念混淆
-- ✅ 使用英文命名
 - ✅ 方法名使用动词，变量/属性名使用名词
 - ❌ 不要为了简短而使用缩写或模糊的命名
 
@@ -31,15 +29,17 @@ description: 当需要给任何东西命名时必读
 
 **好的命名：**
 ```csharp
-const float RotationSpeed = 2.0f;
+const float RotationSpeedInDegree = 2.0f;
 public void SetPositionImmediately(Vector3 position)
 Vector3 ClampToMapBounds(Vector3 position)
 readonly SmoothVector3 smoothPosition = new();
+float durationSeconds
 ```
 
 **不好的命名：**
 ```csharp
-const float rs = 2.0f;  // 缩写不清晰
+const float rs = 2.0f;  // 缩写不清晰,也没突出单位
 public void set(Vector3 pos)  // 不够具体
 Vector3 limit(Vector3 p)  // 参数名不清晰
+float duration
 ```
