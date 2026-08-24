@@ -37,6 +37,15 @@ CanvasItem shader 想共享材质时，不要把 `sampler2D` 当作 `instance un
 独立子窗口关闭垂直同步时，交换链可能短暂呈现旧帧，表现为相机/画面被拉回；与 Camera2D clear 无关，优先检查 VSync。
 [vsync-subwindow-render-snapback.md](vsync-subwindow-render-snapback.md)
 
+`set_script()` 在运行时替换脚本会破坏 `@onready`、残留状态、炸裂类型系统；脚本归属在 .tscn 里声明，运行时只读不写。
+[avoid-set-script.md](avoid-set-script.md)
+
+`preload()` 在解析期隐式加载、制造循环依赖、阻塞延迟加载；资源引用走 `@export` 写进 .tscn，运行时按需 `load()`。
+[avoid-preload.md](avoid-preload.md)
+
+`call_deferred()` 制造一帧幽灵状态、时序不可控、掩盖架构缺陷；先修树结构再用信号，defer 是最后手段。
+[avoid-call-deferred.md](avoid-call-deferred.md)
+
 # 维护此文档
 
 在索引部分增加一句话描述和文档链接，并在同目录新增对应的详细说明文档。
