@@ -15,6 +15,9 @@ description: Godot 开发规范（场景架构、引擎行为、编码规范等�
 每个 `.tscn` 不访问场景树外节点/其它 tscn；与父级等通讯用信号；Autoload 可直接访问。
 [entries/tscn-signal-boundary.md](entries/tscn-signal-boundary.md)
 
+unique name / `%` 只能在同一个 tscn 内互用。跨子 tscn 或外部 tscn 时编辑器能过、打包运行报错；外部只调子场景根上的功能 API，不要用属性把内部节点交出去。
+[entries/unique-name-only-within-same-tscn.md](entries/unique-name-only-within-same-tscn.md)
+
 场景根 `.gd` 不写仅为子节点信号中转的 `_on_*`；子节点 builtin 用 `owner` 调根上 API，场景外连 public 方法。
 [entries/tscn-root-no-child-relay-handlers.md](entries/tscn-root-no-child-relay-handlers.md)
 
@@ -69,8 +72,9 @@ CanvasItem shader 想共享材质时，不要把 `sampler2D` 当作 `instance un
 本节点 `ready` 发出时，同场景已声明子节点的 `_ready()` 已经跑完；setter 写法仍以场景属性桥接为准。
 [entries/export-setter-await-ready.md](entries/export-setter-await-ready.md)
 
-访问 unique 子节点默认用 `%`；仅热路径（如每帧）才 `@onready` 缓存
+访问**本 tscn** 的 unique 子节点默认用 `%`；仅热路径（如每帧）才 `@onready` 缓存。不能跨进子 tscn 或外部 tscn。
 [entries/onready-cache-percent.md](entries/onready-cache-percent.md)
+[entries/unique-name-only-within-same-tscn.md](entries/unique-name-only-within-same-tscn.md)
 
 子节点要访问所属场景根时用 `owner`，不要用 `get_parent()` 硬链
 [entries/owner-vs-get-parent.md](entries/owner-vs-get-parent.md)
@@ -101,7 +105,7 @@ CanvasItem shader 想共享材质时，不要把 `sampler2D` 当作 `instance un
 在 C# 中把引擎 API 当成高成本边界，优先缓存、合并写回并减少重复跨边界调用。
 [entries/csharp-api-cost.md](entries/csharp-api-cost.md)
 
-占位符用 `GetNode<InstancePlaceholder>`，不要另写死 `res://` 路径，也不要 `Duplicate()`。进树前要注入依赖时走 `GetInstancePath()`，否则 `CreateInstance()`。场景内部节点用 unique name + `field ??=`，不对仅由场景结构决定的引用做 `[Export]`。
+占位符用 `GetNode<InstancePlaceholder>`，不要另写死 `res://` 路径，也不要 `Duplicate()`。进树前要注入依赖时走 `GetInstancePath()`，否则 `CreateInstance()`。本 tscn 内部节点用 unique name + `field ??=`，不对仅由场景结构决定的引用做 `[Export]`；unique name 不能跨 tscn。
 [entries/csharp-scene-access.md](entries/csharp-scene-access.md)
 
 # 维护此文档

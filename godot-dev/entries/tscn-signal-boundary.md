@@ -12,7 +12,7 @@
 
 ## 正确做法
 
-场景内处理自身子树与导出属性；读写在 **Autoload** 可直接进行；与**其它场景/节点**的协作用 **信号** 或 **暴露可被上层赋值的属性**。
+场景内处理自身子树与导出属性；读写在 **Autoload** 可直接进行。与其它场景协作：用**信号**，或调用对方根上的**功能 API**。不要用 `%` 钻进对方场景，也不要暴露「直接拿到内部某节点」的属性。见 [unique-name-only-within-same-tscn.md](unique-name-only-within-same-tscn.md)。
 
 ```gdscript
 # game_window.gd（场景根）

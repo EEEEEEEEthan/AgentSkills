@@ -20,6 +20,8 @@
 
 **不要**对「仅由本场景结构决定、不会在 Inspector 里改指向」的内部引用做 `[Export]`（例如占位节点路径、固定子节点）。**只有**在设计上明确允许策划/美术**在编辑器中改绑定**时，才用 Export。
 
+unique name 只在**本 tscn** 内有效。不能 `GetNode("%...")` 去拿子 tscn 或外部 tscn 的 unique 节点（编辑器能过，打包运行报错）。外部只调子场景根上的功能 API。见 [unique-name-only-within-same-tscn.md](unique-name-only-within-same-tscn.md)。
+
 ### 1. 在 tscn 中为节点设置 unique_name
 
 在场景编辑器中选中节点，勾选 **Unique Name in Owner**，或在 tscn 文本中添加：

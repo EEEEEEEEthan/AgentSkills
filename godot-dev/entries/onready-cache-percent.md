@@ -2,7 +2,7 @@
 
 ## 默认
 
-子节点用场景 unique 名时，**直接 `%UniqueName`** 即可，不必为「少一次查找」默认加 `@onready`。
+子节点用场景 unique 名时，**直接 `%UniqueName`** 即可，不必为「少一次查找」默认加 `@onready`。`%` 只解析**本 tscn** 里的 unique 节点，不能跨进子 tscn 或外部 tscn，见 [unique-name-only-within-same-tscn.md](unique-name-only-within-same-tscn.md)。
 
 ```gdscript
 @export var label_text: String = "":

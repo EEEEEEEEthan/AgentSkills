@@ -2,7 +2,7 @@
 
 ## 问题
 
-对标记为 unique、场景中应始终存在的节点做 `if node:`，会掩盖配置错误，难调试。
+对标记为 unique、**本 tscn** 中应始终存在的节点做 `if node:`，会掩盖配置错误，难调试。`%` 不能跨 tscn，见 [unique-name-only-within-same-tscn.md](unique-name-only-within-same-tscn.md)。
 
 ## 错误示例
 
