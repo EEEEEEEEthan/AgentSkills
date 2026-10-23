@@ -1,5 +1,7 @@
 # 导出 setter 内 `await ready`：就绪后再访问子节点
 
+场景属性怎么写，以 [scene-property-setter-bridge.md](scene-property-setter-bridge.md) 为准：setter 一条路径，不在 `_ready` 再刷一遍。本文只说明 `ready` 的时序。
+
 ## 适用
 
 根脚本挂在 **场景实例根**（与 `.tscn` 中子节点同层或父层）上，setter 必须把导出值写到**子节点**（`%` 唯一名等），且接受 setter 在「未 ready」时挂起直到本节点 `ready`。
@@ -21,10 +23,9 @@
 
 已 ready 时分支跳过 `await`，直接同步子节点。
 
-## 与 `is_node_ready()` + `_ready()` 刷新的取舍
+## 不在 `_ready` 再刷一遍
 
-- **`await ready`**：单一路径写在 setter，不必另写 `_refresh_*()` 再在 `_ready()` 里重复调用；注意 setter 会变成可 `await` 的协程，调用方若在「未 ready 赋值」路径上要理解异步语义。
-- **`is_node_ready()` + `_ready()` 统一刷新**：同步友好、与「不在 setter 里挂起」的代码风格一致；需维护 `_refresh_*` 与 `_ready()` 双处调用。
+`await ready` 把同步留在 setter 一条路径上。另写 `_refresh_*()` 再在 `_ready()` 里调用，会和 setter 各维护一份，不作为常规写法。setter 因此可能变成协程；调用方在「未 ready 就赋值」时要按异步理解。
 
 ## 常见误用
 

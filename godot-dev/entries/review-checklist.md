@@ -4,11 +4,11 @@
 
 - [ ] 成员顺序是否为：字段 → 属性 → 方法？
 - [ ] 导出属性的 setter 写子节点时，是否在同步前 `if not is_node_ready(): await ready`（必要时 `await` 子节点）？
-- [ ] 是否使用 `@onready` 缓存所需节点引用？
+- [ ] unique 子节点是否默认用 `%`，仅热路径才 `@onready` 缓存？
 - [ ] 子节点访问场景根时是否用 `owner` 而非 `get_parent()`？
 - [ ] 是否避免对「必有」的 unique 节点做多余 null 检查？
-- [ ] 刷新函数是否直接访问已缓存节点（无无意义 null 检查）？
+- [ ] 热路径是否直接用已缓存节点（无多余 null 检查）；非热路径是否用 `%`？
 - [ ] 节点引用是否有合适类型提示？
 - [ ] 惰性加载资源是否采用「成员与 getter 同名」，且每项只判断自己的成员？
-- [ ] `call_deferred` 是否使用 `&"method_name"`？
-- [ ] 纯数据类在 setter 里发信号或副作用时，是否用显式 `_xxx` 后备字段 + getter/setter？
+- [ ] 是否避免 `call_deferred`；若确属极少数例外，是否注释了原因且方法名用 `&"method_name"`？
+- [ ] setter 是否同名自赋值，并默认省略显式 `_backing`（仅构造期要绕过 setter 时才用）？

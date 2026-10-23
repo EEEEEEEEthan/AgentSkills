@@ -19,7 +19,7 @@ game.add_child(spawned)
 
 ## 何时不用 `create_instance`
 
-占位符上存的属性会在 `create_instance` 时按引擎规则应用；若必须在**进树前**注入且目标 `_ready()` 会立刻读这些依赖，改用 `load(placeholder.get_instance_path()).instantiate()`，配好后再 `add_child`（见引擎侧 `instance-placeholder` 说明）。
+占位符上存的属性会在 `create_instance` 时按引擎规则应用；若必须在**进树前**注入且目标 `_ready()` 会立刻读这些依赖，改用 `load(placeholder.get_instance_path()).instantiate()`，配好后再 `add_child`（见 [instance-placeholder.md](instance-placeholder.md)）。
 
 ## 常见错误
 
