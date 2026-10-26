@@ -9,6 +9,9 @@ description: Godot 开发规范（场景架构、引擎行为、编码规范等�
 
 ## 场景架构
 
+能写成 `.tscn` 的结构、引用和信号连接就写进场景；运行时只做场景表达不了的行为。
+[entries/prefer-static-tscn.md](entries/prefer-static-tscn.md)
+
 除**继承场景**外：根脚本为同文件夹同名 `.gd`（尽量薄，作对外边界）；具体功能在 tscn 内子节点 builtin 实现（可访问场景内含私有成员），除非有复用可能。
 [entries/tscn-root-script-same-name-gd.md](entries/tscn-root-script-same-name-gd.md)
 
