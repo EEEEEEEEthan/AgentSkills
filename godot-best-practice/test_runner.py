@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""启动 Godot 自动化测试。拷进项目后改 GODOT、EXPORT_PRESET 和 TESTS。
+"""启动 Godot 自动化测试。拷进项目后改 EXPORT_PRESET 和 TESTS。引擎用 .engine.bat / .engine.sh。
 
 一次只跑一个：
 
@@ -20,8 +20,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
-# 项目内引擎启动脚本，或 godot 可执行文件。
-GODOT = "godot"
+# 项目内引擎启动脚本。Windows 用 .engine.bat，Linux / macOS 用 .engine.sh。
+GODOT = ".engine.bat" if sys.platform == "win32" else ".engine.sh"
 # 与 export_presets.cfg 里的预设名一致。
 EXPORT_PRESET = "Windows Desktop"
 # 含 project.godot 的目录。

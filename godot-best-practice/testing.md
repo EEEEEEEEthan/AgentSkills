@@ -19,7 +19,7 @@
 
 ## 启动
 
-Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。冒烟和专项都是它的一个选项，一次只跑一个：
+Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `.engine-config.toml`。冒烟和专项都是它的一个选项，一次只跑一个：
 
 ```text
 python test_runner.py --smoke
@@ -37,4 +37,4 @@ python test_runner.py --monkey
 
 `TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径，游戏入口读 `--test=`，`load` 该脚本后 `new()`，挂到根节点并设为当前场景。不要 `set_script()`，也不要 `change_scene_to_file()`。
 
-模板是同目录的 [test_runner.py](test_runner.py)。拷进项目后改引擎路径、导出预设和 `TESTS`。
+模板是同目录的 [test_runner.py](test_runner.py)。拷进项目后改导出预设和 `TESTS`。引擎启动用仓库里的 `.engine.bat` 或 `.engine.sh`。
