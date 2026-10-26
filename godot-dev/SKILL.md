@@ -7,7 +7,7 @@ description: Godot 开发规范（场景架构、引擎行为、编码规范等�
 
 先读本文件索引；落到具体问题时再读对应条目。
 
-## 场景架构
+## 引擎
 
 能写成 `.tscn` 的结构、引用和信号连接就写进场景；运行时只做场景表达不了的行为。
 [entries/prefer-static-tscn.md](entries/prefer-static-tscn.md)
@@ -23,8 +23,6 @@ unique name / `%` 只能在同一个 tscn 内互用。跨子 tscn 或外部 tscn
 
 场景根 `.gd` 不写仅为子节点信号中转的 `_on_*`；子节点 builtin 用 `owner` 调根上 API，场景外连 public 方法。
 [entries/tscn-root-no-child-relay-handlers.md](entries/tscn-root-no-child-relay-handlers.md)
-
-## 引擎
 
 节点是否已经进树，会直接决定能否安全访问依赖、尺寸和生命周期相关状态。
 [entries/lifecycle-tree-timing.md](entries/lifecycle-tree-timing.md)
