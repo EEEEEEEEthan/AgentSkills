@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""按 project.godot 的 [engine_host] 下载 Godot，并返回或启动对应平台的可执行文件。"""
+"""按 project.godot 的 [engine_host] 准备 Godot。无参数时打开编辑器，有参数时把参数交给引擎并等待结束。"""
 
 from __future__ import annotations
 
 import platform
 import shutil
 import stat
+import subprocess
 import sys
 import urllib.request
 import zipfile
@@ -126,30 +127,35 @@ def prepare_engine() -> Path:
     return executable
 
 
-def run_engine(arguments: list[str]) -> int:
-    import subprocess
-
-    executable = prepare_engine()
-    completed = subprocess.run([str(executable), *arguments], cwd=ROOT)
-    return completed.returncode
-
-
 def main(argv: list[str]) -> int:
-    command = argv[0] if argv else ""
-    engine_arguments = argv[1:]
-    if engine_arguments[:1] == ["--"]:
-        engine_arguments = engine_arguments[1:]
     try:
-        if command == "prepare":
-            prepare_engine()
+        executable = prepare_engine()
+        if not argv:
+            arguments = [str(executable), "--editor", "--path", str(ROOT)]
+            if sys.platform == "win32":
+                subprocess.Popen(
+                    arguments,
+                    cwd=ROOT,
+                    creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    close_fds=True,
+                )
+            else:
+                subprocess.Popen(
+                    arguments,
+                    cwd=ROOT,
+                    start_new_session=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             return 0
-        if command == "path":
-            print(prepare_engine())
-            return 0
-        if command == "run":
-            return run_engine(engine_arguments)
-        print("用法: .engine_host.py prepare | path | run [Godot 参数...]", file=sys.stderr)
-        return 2
+        if argv[:1] == ["--"]:
+            argv = argv[1:]
+        completed = subprocess.run([str(executable), *argv], cwd=ROOT)
+        return completed.returncode
     except Exception as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

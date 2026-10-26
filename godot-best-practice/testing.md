@@ -12,7 +12,7 @@
 
 ## 启动
 
-Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `project.godot` 的 `[engine_host]`。测试入口 Autoload 也写在这个文件里。一次只跑一个：
+Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.py`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `project.godot` 的 `[engine_host]`。测试入口 Autoload 也写在这个文件里。一次只跑一个：
 
 ```text
 python .engine_test.py
@@ -36,4 +36,4 @@ python .engine_test.py --all
 
 editor 和 debug 包的存档放在这次的运行目录下，避免并发写到同一处。release 包再用别的位置，例如用户目录。
 
-模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。默认测试是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。其它测试放在 `tests` 目录下一层。
+模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.py` 一起在安装时拷进仓库。它只通过 `.engine.py` 启动引擎。默认测试是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。其它测试放在 `tests` 目录下一层。

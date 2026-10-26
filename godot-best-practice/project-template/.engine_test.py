@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""用项目里的 .engine.bat / .engine.sh 导出 debug 包并跑测试。
+"""用项目里的 .engine.py 导出 debug 包并跑测试。
 
   python .engine_test.py
   python .engine_test.py --id-smoke
@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parent
-ENGINE = PROJECT / (".engine.bat" if sys.platform == "win32" else ".engine.sh")
+ENGINE = PROJECT / ".engine.py"
 EXPORT_PRESET = "Windows Desktop Test" if sys.platform == "win32" else "Linux Desktop Test"
 TESTS_DIRECTORY = PROJECT / "tests"
 DEFAULT_TEST = "smoke"
@@ -158,14 +158,16 @@ def export_debug(
 ) -> Path | None:
     export_dir.mkdir(parents=True, exist_ok=True)
     output = export_dir / ("game.exe" if sys.platform == "win32" else "game")
-    command = engine_command(
+    command = [
+        sys.executable,
+        str(ENGINE),
         "--headless",
         "--path",
         str(PROJECT),
         "--export-debug",
         EXPORT_PRESET,
         str(output),
-    )
+    ]
     if run_and_watch(command, log_path, cancel, processes, processes_lock) != 0:
         return None
     binary = exported_binary(output)
@@ -185,12 +187,6 @@ def exported_binary(output: Path) -> Path | None:
     if output.is_file():
         return output
     return None
-
-
-def engine_command(*arguments: str) -> list[str]:
-    if ENGINE.suffix.lower() == ".bat":
-        return ["cmd", "/c", str(ENGINE), *arguments]
-    return [str(ENGINE), *arguments]
 
 
 def launch_command(binary: Path, scene: str, run_directory: Path) -> list[str]:
