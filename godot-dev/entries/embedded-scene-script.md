@@ -70,7 +70,7 @@ _control_window = get_tree().current_scene.get_node(^\"ControlWindow\") as Windo
 ## 维护注意
 
 - 改嵌入源码后保存场景；合并冲突时关注 `script/source` 多行字符串块。
-- 字符串里的 `"` 在 `.tscn` 里会转义，**优先在 Godot 脚本编辑器里改**，少手改 `.tscn` 正文。
+- `script/source` 里的 `"` 必须写成 `\"`，否则会截断字符串。
 - 嵌入脚本一般**不加** `class_name`；跨场景访问用场景结构、`get_node` 或显式类型转换（`as Game`）。
 
 ## 与本仓库的对应关系
