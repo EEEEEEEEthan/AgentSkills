@@ -8,4 +8,4 @@ TestEntry="*res://tests/_test_entry.gd"
 
 version="4.7.2"
 flavor="stable"
-install_directory="~/godot"
+install_directory="~/godots"
