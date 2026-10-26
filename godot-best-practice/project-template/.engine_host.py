@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""按 .engine_config.toml 下载 Godot，并返回或启动对应平台的可执行文件。"""
+"""按 project.godot 的 [engine_host] 下载 Godot，并返回或启动对应平台的可执行文件。"""
 
 from __future__ import annotations
 
-import argparse
 import platform
 import shutil
 import stat
@@ -13,7 +12,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-CONFIG_PATH = ROOT / ".engine_config.toml"
+CONFIG_PATH = ROOT / "project.godot"
 
 HOST_PACKAGES = {
     "windows": {
@@ -36,9 +35,15 @@ HOST_PACKAGES = {
 
 def load_engine_config(config_path: Path = CONFIG_PATH) -> dict[str, str]:
     values: dict[str, str] = {}
+    in_engine_host = False
     for raw_line in config_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.split("#", 1)[0].strip()
+        line = raw_line.split(";", 1)[0].strip()
         if not line:
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            in_engine_host = line[1:-1].strip() == "engine_host"
+            continue
+        if not in_engine_host:
             continue
         key, value = line.split("=", 1)
         values[key.strip()] = value.strip().strip('"').strip("'")
@@ -130,24 +135,21 @@ def run_engine(arguments: list[str]) -> int:
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("prepare", help="下载配置里的引擎版本")
-    subparsers.add_parser("path", help="打印引擎可执行文件路径，必要时先下载")
-    run_parser = subparsers.add_parser("run", help="准备引擎后把参数转交给它")
-    run_parser.add_argument("engine_arguments", nargs=argparse.REMAINDER)
-    arguments = parser.parse_args(argv)
+    command = argv[0] if argv else ""
+    engine_arguments = argv[1:]
+    if engine_arguments[:1] == ["--"]:
+        engine_arguments = engine_arguments[1:]
     try:
-        if arguments.command == "prepare":
+        if command == "prepare":
             prepare_engine()
             return 0
-        if arguments.command == "path":
+        if command == "path":
             print(prepare_engine())
             return 0
-        engine_arguments = arguments.engine_arguments
-        if engine_arguments[:1] == ["--"]:
-            engine_arguments = engine_arguments[1:]
-        return run_engine(engine_arguments)
+        if command == "run":
+            return run_engine(engine_arguments)
+        print("用法: .engine_host.py prepare | path | run [Godot 参数...]", file=sys.stderr)
+        return 2
     except Exception as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

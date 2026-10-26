@@ -1,4 +1,0 @@
-# Godot 引擎。安装目录以 ~ 或绝对路径表示用户目录；否则相对项目根。
-version = "4.7.2"
-flavor = "stable"
-install_directory = "~/godot"

@@ -7,8 +7,7 @@
 
 先导入资源，再把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
 出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。
-Autoload test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到根节点。测试不使用 tscn。
-project.godot 可先空着。导入前后会补上 TestEntry，已有配置保留。
+Autoload tests/test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到根节点。测试不使用 tscn。
 """
 
 from __future__ import annotations
@@ -27,7 +26,6 @@ EXPORT_PRESET = "Windows Desktop Test" if sys.platform == "win32" else "Linux De
 TESTS: dict[str, str] = {
     "smoke": "res://tests/smoke.gd",
 }
-AUTOLOAD_LINE = 'TestEntry="*res://tests/test_entry.gd"'
 
 OFFENDING_PREFIXES = (
     "SCRIPT ERROR:",
@@ -56,33 +54,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_and_watch(launch_command(binary, TESTS[test_name]))
 
 
-def ensure_test_autoload() -> None:
-    project_file = PROJECT / "project.godot"
-    text = project_file.read_text(encoding="utf-8") if project_file.is_file() else ""
-    if AUTOLOAD_LINE in text:
-        return
-    if not text.strip():
-        project_file.write_text(f"config_version=5\n\n[autoload]\n\n{AUTOLOAD_LINE}\n", encoding="utf-8")
-        return
-    lines = text.splitlines()
-    autoload_header = None
-    for index, line in enumerate(lines):
-        if line.strip() == "[autoload]":
-            autoload_header = index
-            break
-    if autoload_header is None:
-        if lines and lines[-1].strip():
-            lines.append("")
-        lines.extend(["[autoload]", "", AUTOLOAD_LINE])
-    else:
-        lines.insert(autoload_header + 1, AUTOLOAD_LINE)
-    project_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
 def export_debug(export_dir: Path) -> Path | None:
-    ensure_test_autoload()
     imported = run_and_watch(engine_command("--headless", "--path", str(PROJECT), "--import"))
-    ensure_test_autoload()
     if imported != 0:
         return None
     output_dir = export_dir / str(uuid.uuid4())

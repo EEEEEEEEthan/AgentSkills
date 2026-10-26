@@ -9,7 +9,7 @@ description: Godot 最佳实践。编写、审查或改 Godot 项目时使用。
 
 ## 初始化godot工程
 
-用仓库脚本下载并启动 Godot，版本写在 `.engine_config.toml`。`.engine` 自己下载，不用先跑准备脚本。
+用仓库脚本下载并启动 Godot，版本写在 `project.godot` 的 `[engine_host]`。`.engine` 自己下载，不用先跑准备脚本。
 [setup.md](setup.md)
 
 ## 引擎最佳实践

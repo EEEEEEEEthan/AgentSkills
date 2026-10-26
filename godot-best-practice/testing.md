@@ -19,7 +19,7 @@
 
 ## 启动
 
-Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `.engine_config.toml`。冒烟和专项都是它的一个选项，一次只跑一个：
+Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `project.godot` 的 `[engine_host]`。测试入口 Autoload 也写在这个文件里。冒烟和专项都是它的一个选项，一次只跑一个：
 
 ```text
 python .engine_test.py --smoke
