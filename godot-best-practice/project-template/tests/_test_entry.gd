@@ -6,13 +6,13 @@ const TEST_ARGUMENT_PREFIX := "--test="
 const RUN_DIRECTORY_PREFIX := "--run-directory="
 
 
-func _init() -> void:
-	var run_directory := argument_value(RUN_DIRECTORY_PREFIX)
-	if run_directory.is_empty():
-		return
-	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
-	ProjectSettings.set_setting("application/config/custom_user_dir_name", run_directory.sha256_text())
-	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
+func save_directory() -> String:
+	if OS.has_feature("editor") or OS.is_debug_build():
+		var run_directory := argument_value(RUN_DIRECTORY_PREFIX)
+		if run_directory.is_empty():
+			return OS.get_executable_path().get_base_dir()
+		return run_directory
+	return OS.get_user_data_dir()
 
 
 func _ready() -> void:

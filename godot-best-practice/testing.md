@@ -25,11 +25,15 @@ python .engine_test.py --all
 
 顺序固定：
 
-1. 打一份 debug 包到临时文件目录下的 `$PROJECT_NAME/test/export_$GUID/` 根目录，各项测试共用。`$PROJECT_NAME` 是仓库目录名。每项的运行目录是 `export_$GUID/tests/$ID/`，日志是 `export_$GUID/tests/$ID/test_log.txt`。`_test_entry.gd` 按运行目录把 `user://` 隔开。导出时引擎会自己导入资源。
+1. 打一份 debug 包到临时文件目录下的 `$PROJECT_NAME/test/export_$GUID/` 根目录，各项测试共用。`$PROJECT_NAME` 是仓库目录名。每项的运行目录是 `export_$GUID/tests/$ID/`，日志是 `export_$GUID/tests/$ID/test_log.txt`。导出时引擎会自己导入资源。
 2. 用该包跑对应的 GDScript，不在编辑器里跑。
 3. 转发 Godot 的 stdout / stderr，供看日志。
 4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。
 
 `tests` 目录下一层、不以 `_` 开头的 gd 都会被 `--all` 纳入。导出包不接受编辑器的场景路径。Autoload `tests/_test_entry.gd` 读 `--test=`，脚本必须 `extends Node`，`load` 后 `new()`，挂到自己下面。不要 `set_script()`。
+
+## 存档
+
+editor 和 debug 包的存档放在这次的运行目录下，避免并发写到同一处。release 包再用别的位置，例如用户目录。
 
 模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。默认测试是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。其它测试放在 `tests` 目录下一层。
