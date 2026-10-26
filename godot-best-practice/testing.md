@@ -7,7 +7,7 @@
 - **冒烟**：唯一。覆盖大部分游戏流程，不是全部。CI 只跑这一条。
 - **专项**：很多条，每条覆盖完整 case。开发结束自测时跑。冒烟直接调用其中的某个或某些方法，不把流程再写一遍。
 
-两者都是 GDScript，脚本 `extends Node`。不要为测试建 `.tscn`。
+每个测试脚本都 `extends Node`，冒烟和专项一样。不要为测试建 `.tscn`。
 
 ## 时间上限
 
@@ -35,6 +35,6 @@ python .engine_test.py --monkey
 3. 转发 Godot 的 stdout / stderr，供看日志。
 4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。
 
-`TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径。Autoload `tests/test_entry.gd` 读 `--test=`，`load` 该脚本后 `new()`，挂到根节点并设为当前场景。不要 `set_script()`，也不要 `change_scene_to_file()`。
+`TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径。Autoload `tests/test_entry.gd` 读 `--test=`，脚本必须 `extends Node`，`load` 后 `new()`，挂到自己下面。不要 `set_script()`。
 
 模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。初始冒烟是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。专项加进 `TESTS`。

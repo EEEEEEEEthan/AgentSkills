@@ -7,7 +7,7 @@
 
 先导入资源，再把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
 出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。
-Autoload tests/test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到根节点。测试不使用 tscn。
+Autoload tests/test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到自己下面。测试不使用 tscn。
 """
 
 from __future__ import annotations
