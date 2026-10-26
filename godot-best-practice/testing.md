@@ -1,6 +1,6 @@
 # Godot 自动化测试最佳实践
 
-每条测试都是 `tests` 目录下一层的 `extends Node` 脚本，文件名不以 `_` 开头。`_test_entry.gd` 是入口，不参与测试。不带参数时跑 `smoke`。CI 跑这一条。不要为测试建 `.tscn`。不要递归子目录。
+每条测试都是 `tests` 目录下一层的 `extends Node` 脚本，文件名不以 `_` 开头。`_test_entry.gd` 是入口，不参与测试。不带参数时跑 `smoke`。CI 跑 `--all`。不要为测试建 `.tscn`。不要递归子目录。
 
 ## 时间上限
 
