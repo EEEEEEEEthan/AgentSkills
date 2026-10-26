@@ -19,11 +19,11 @@
 
 ## 启动
 
-Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `.engine-config.toml`。冒烟和专项都是它的一个选项，一次只跑一个：
+Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `.engine_config.toml`。冒烟和专项都是它的一个选项，一次只跑一个：
 
 ```text
-python .test_entry.py --smoke
-python .test_entry.py --monkey
+python .engine_test.py --smoke
+python .engine_test.py --monkey
 ```
 
 `--smoke` 是唯一的冒烟。专项的选项名就是测试名，例如专项叫 monkey 就是 `--monkey`。CI 只跑 `--smoke`。
@@ -37,4 +37,4 @@ python .test_entry.py --monkey
 
 `TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径。Autoload `tests/test_entry.gd` 读 `--test=`，`load` 该脚本后 `new()`，挂到根节点并设为当前场景。不要 `set_script()`，也不要 `change_scene_to_file()`。
 
-模板在 [project-template/.test_entry.py](project-template/.test_entry.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。初始冒烟是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。专项加进 `TESTS`。
+模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。初始冒烟是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。专项加进 `TESTS`。

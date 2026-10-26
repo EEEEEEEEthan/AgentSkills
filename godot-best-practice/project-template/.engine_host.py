@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""按 .engine-config.toml 下载 Godot，并返回或启动对应平台的可执行文件。"""
+"""按 .engine_config.toml 下载 Godot，并返回或启动对应平台的可执行文件。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-CONFIG_PATH = ROOT / ".engine-config.toml"
+CONFIG_PATH = ROOT / ".engine_config.toml"
 
 HOST_PACKAGES = {
     "windows": {

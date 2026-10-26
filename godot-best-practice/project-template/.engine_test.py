@@ -3,7 +3,7 @@
 
 一次只跑一个：
 
-  python .test_entry.py --smoke
+  python .engine_test.py --smoke
 
 先导入资源，再把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
 出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。

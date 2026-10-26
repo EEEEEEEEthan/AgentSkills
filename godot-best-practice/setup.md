@@ -1,6 +1,6 @@
 # 引擎安装
 
-Godot 不进仓库。版本和安装位置写在仓库根的 `.engine-config.toml`。这是 TOML，和 Codex 的 `config.toml` 同一类格式。
+Godot 不进仓库。版本和安装位置写在仓库根的 `.engine_config.toml`。这是 TOML，和 Codex 的 `config.toml` 同一类格式。
 
 ```toml
 version = "4.7.2"
@@ -39,7 +39,7 @@ macOS 能下载并打开编辑器。
 拷进去之后直接：
 
 ```text
-python .test_entry.py --smoke
+python .engine_test.py --smoke
 ```
 
-`.test_entry.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。冒烟是 `tests/smoke.gd`，游戏进程起来即通过。`project.godot` 可以先是空的；跑测试时会补上 Autoload `TestEntry="*res://tests/test_entry.gd"`，Godot 已经写过的配置保留。专项再加进 `TESTS`。见 [testing.md](testing.md)。
+`.engine_test.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。冒烟是 `tests/smoke.gd`，游戏进程起来即通过。`project.godot` 可以先是空的；跑测试时会补上 Autoload `TestEntry="*res://tests/test_entry.gd"`，Godot 已经写过的配置保留。专项再加进 `TESTS`。见 [testing.md](testing.md)。
