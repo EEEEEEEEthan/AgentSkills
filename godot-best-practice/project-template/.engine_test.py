@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""用项目里的 .engine.bat / .engine.sh 导出 debug 包并跑一个测试。
-
-一次只跑一个：
+"""用项目里的 .engine.bat / .engine.sh 导出 debug 包并跑测试。
 
   python .engine_test.py
   python .engine_test.py --id-smoke
+  python .engine_test.py --all
 
-先把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
-出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。
-Autoload tests/test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到自己下面。测试不使用 tscn。
+不带参数跑 smoke。--all 并发跑 tests 目录下一层、文件名不以 _ 开头的全部 gd。
+出现错误或警告立刻结束该测试项。--all 里有一项失败就停掉其余项。
+时间上限写在 GDScript 入口里，不在这里。
+Autoload tests/_test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到自己下面。测试不使用 tscn。
 """
 
 from __future__ import annotations
@@ -17,16 +17,15 @@ import argparse
 import subprocess
 import sys
 import tempfile
+import threading
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parent
 ENGINE = PROJECT / (".engine.bat" if sys.platform == "win32" else ".engine.sh")
 EXPORT_PRESET = "Windows Desktop Test" if sys.platform == "win32" else "Linux Desktop Test"
-
-TESTS: dict[str, str] = {
-    "smoke": "res://tests/smoke.gd",
-}
+TESTS_DIRECTORY = PROJECT / "tests"
 DEFAULT_TEST = "smoke"
 
 OFFENDING_PREFIXES = (
@@ -38,27 +37,115 @@ OFFENDING_PREFIXES = (
 )
 
 
+def discover_tests() -> dict[str, str]:
+    found: dict[str, str] = {}
+    if not TESTS_DIRECTORY.is_dir():
+        return found
+    for path in sorted(TESTS_DIRECTORY.glob("*.gd")):
+        if path.name.startswith("_"):
+            continue
+        found[path.stem] = f"res://tests/{path.name}"
+    return found
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="导出 debug 包并跑一个测试")
-    for name in TESTS:
-        parser.add_argument(f"--id-{name}", dest=name, action="store_true", help=TESTS[name])
+    tests = discover_tests()
+    parser = argparse.ArgumentParser(description="导出 debug 包并跑测试")
+    parser.add_argument("--all", action="store_true", help="并发跑 tests 目录下全部测试")
+    for name in tests:
+        parser.add_argument(f"--id-{name}", dest=name, action="store_true", help=tests[name])
     args = parser.parse_args(argv)
-    selected = [name for name in TESTS if getattr(args, name)]
+    selected = [name for name in tests if getattr(args, name)]
+    if args.all and selected:
+        print("一次只能跑一个测试，或使用 --all", file=sys.stderr)
+        return 2
+    if args.all:
+        return run_all(tests)
     if not selected:
         selected = [DEFAULT_TEST]
-    if len(selected) != 1:
-        names = " ".join(f"--id-{name}" for name in TESTS)
-        print(f"一次只能跑一个测试，可选：{names}", file=sys.stderr)
+    if len(selected) != 1 or selected[0] not in tests:
+        names = " ".join(f"--id-{name}" for name in tests)
+        print(f"一次只能跑一个测试，可选：{names} --all", file=sys.stderr)
         return 2
-    test_name = selected[0]
-    with tempfile.TemporaryDirectory(prefix="godot-test-") as export_dir:
-        binary = export_debug(Path(export_dir))
+    return run_one(selected[0], tests[selected[0]], None)
+
+
+def run_all(tests: dict[str, str]) -> int:
+    run_id = uuid.uuid4()
+    log_directory = Path(tempfile.gettempdir()) / "test_logs" / str(run_id)
+    log_directory.mkdir(parents=True)
+    cancel = threading.Event()
+    processes: list[subprocess.Popen[str]] = []
+    processes_lock = threading.Lock()
+    failure_lock = threading.Lock()
+    failed_name: list[str] = []
+
+    def run_named(name: str) -> int:
+        if cancel.is_set():
+            return 1
+        log_path = log_directory / f"{name}.txt"
+        code = run_one(
+            name,
+            tests[name],
+            log_path,
+            cancel=cancel,
+            processes=processes,
+            processes_lock=processes_lock,
+        )
+        if code != 0:
+            with failure_lock:
+                if not cancel.is_set():
+                    failed_name.append(name)
+                    cancel.set()
+                    stop_registered(processes, processes_lock)
+        return code
+
+    with ThreadPoolExecutor(max_workers=max(len(tests), 1)) as pool:
+        futures = [pool.submit(run_named, name) for name in tests]
+        codes = [future.result() for future in futures]
+    if failed_name:
+        name = failed_name[0]
+        print(
+            f"{name}测试失败, 详细报告见{log_directory / f'{name}.txt'}",
+            file=sys.stderr,
+        )
+        return 1
+    if any(code != 0 for code in codes):
+        return 1
+    return 0
+
+
+def run_one(
+    name: str,
+    script_path: str,
+    log_path: Path | None,
+    cancel: threading.Event | None = None,
+    processes: list[subprocess.Popen[str]] | None = None,
+    processes_lock: threading.Lock | None = None,
+) -> int:
+    del name
+    with tempfile.TemporaryDirectory(prefix="godot-test-", ignore_cleanup_errors=True) as export_dir:
+        binary = export_debug(Path(export_dir), log_path, cancel, processes, processes_lock)
+        if cancel is not None and cancel.is_set():
+            return 1
         if binary is None:
             return 1
-        return run_and_watch(launch_command(binary, TESTS[test_name]))
+        return run_and_watch(
+            launch_command(binary, script_path),
+            log_path,
+            cancel,
+            processes,
+            processes_lock,
+        )
 
 
-def export_debug(export_dir: Path) -> Path | None:
+def export_debug(
+    export_dir: Path,
+    log_path: Path | None,
+    cancel: threading.Event | None,
+    processes: list[subprocess.Popen[str]] | None,
+    processes_lock: threading.Lock | None,
+) -> Path | None:
     output_dir = export_dir / str(uuid.uuid4())
     output_dir.mkdir(parents=True)
     output = output_dir / ("game.exe" if sys.platform == "win32" else "game")
@@ -70,11 +157,16 @@ def export_debug(export_dir: Path) -> Path | None:
         EXPORT_PRESET,
         str(output),
     )
-    if run_and_watch(command) != 0:
+    if run_and_watch(command, log_path, cancel, processes, processes_lock) != 0:
         return None
     binary = exported_binary(output)
     if binary is None:
-        print(f"导出产物不存在：{output}", file=sys.stderr)
+        message = f"导出产物不存在：{output}\n"
+        if log_path is None:
+            print(message, file=sys.stderr, end="")
+        else:
+            with log_path.open("a", encoding="utf-8") as log_file:
+                log_file.write(message)
         return None
     return binary
 
@@ -99,7 +191,15 @@ def launch_command(binary: Path, scene: str) -> list[str]:
     return [str(binary), "--", f"--test={scene}"]
 
 
-def run_and_watch(command: list[str]) -> int:
+def run_and_watch(
+    command: list[str],
+    log_path: Path | None = None,
+    cancel: threading.Event | None = None,
+    processes: list[subprocess.Popen[str]] | None = None,
+    processes_lock: threading.Lock | None = None,
+) -> int:
+    if cancel is not None and cancel.is_set():
+        return 1
     process = subprocess.Popen(
         command,
         cwd=PROJECT,
@@ -110,21 +210,75 @@ def run_and_watch(command: list[str]) -> int:
         errors="replace",
         bufsize=1,
     )
-    assert process.stdout is not None
+    register(process, processes, processes_lock)
+    log_file = log_path.open("a", encoding="utf-8") if log_path is not None else None
     offending = False
-    for raw_line in process.stdout:
-        sys.stdout.write(raw_line)
-        sys.stdout.flush()
-        line = raw_line.strip()
-        if any(line.startswith(prefix) for prefix in OFFENDING_PREFIXES):
-            offending = True
-            stop(process)
-            print(f"日志出现错误或警告，已停止：{line}", file=sys.stderr)
-            break
+    assert process.stdout is not None
+    try:
+        for raw_line in process.stdout:
+            if cancel is not None and cancel.is_set():
+                stop(process)
+                break
+            if log_file is None:
+                sys.stdout.write(raw_line)
+                sys.stdout.flush()
+            else:
+                log_file.write(raw_line)
+                log_file.flush()
+            line = raw_line.strip()
+            if any(line.startswith(prefix) for prefix in OFFENDING_PREFIXES):
+                offending = True
+                stop(process)
+                notice = f"日志出现错误或警告，已停止：{line}\n"
+                if log_file is None:
+                    print(notice, file=sys.stderr, end="")
+                else:
+                    log_file.write(notice)
+                    log_file.flush()
+                break
+    finally:
+        if log_file is not None:
+            log_file.close()
     return_code = process.wait()
-    if offending:
+    unregister(process, processes, processes_lock)
+    if offending or (cancel is not None and cancel.is_set() and return_code != 0):
+        return 1
+    if cancel is not None and cancel.is_set():
         return 1
     return return_code
+
+
+def register(
+    process: subprocess.Popen[str],
+    processes: list[subprocess.Popen[str]] | None,
+    processes_lock: threading.Lock | None,
+) -> None:
+    if processes is None or processes_lock is None:
+        return
+    with processes_lock:
+        processes.append(process)
+
+
+def unregister(
+    process: subprocess.Popen[str],
+    processes: list[subprocess.Popen[str]] | None,
+    processes_lock: threading.Lock | None,
+) -> None:
+    if processes is None or processes_lock is None:
+        return
+    with processes_lock:
+        if process in processes:
+            processes.remove(process)
+
+
+def stop_registered(
+    processes: list[subprocess.Popen[str]],
+    processes_lock: threading.Lock,
+) -> None:
+    with processes_lock:
+        running = list(processes)
+    for process in running:
+        stop(process)
 
 
 def stop(process: subprocess.Popen[str]) -> None:

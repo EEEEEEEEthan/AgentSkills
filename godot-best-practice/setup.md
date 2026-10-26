@@ -5,7 +5,7 @@ Godot 不进仓库。版本和安装位置写在 `project.godot` 的 `[engine_ho
 ```ini
 [autoload]
 
-TestEntry="*res://tests/test_entry.gd"
+TestEntry="*res://tests/_test_entry.gd"
 
 [engine_host]
 
@@ -48,4 +48,4 @@ macOS 能下载并打开编辑器。
 python .engine_test.py
 ```
 
-`.engine_test.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。不带参数跑 `tests/smoke.gd`，游戏进程起来即通过。其它测试加进 `TESTS`，用 `--id-` 加测试名。见 [testing.md](testing.md)。
+`.engine_test.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。不带参数跑 `tests/smoke.gd`，游戏进程起来即通过。`--all` 并发跑 `tests` 目录下一层、不以 `_` 开头的 gd。见 [testing.md](testing.md)。

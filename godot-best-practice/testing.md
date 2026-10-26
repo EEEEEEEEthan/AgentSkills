@@ -1,6 +1,6 @@
 # Godot 自动化测试最佳实践
 
-每条测试都是一个 `extends Node` 的 GDScript，走同一条启动路径。不带参数时跑 `smoke`。CI 跑这一条。不要为测试建 `.tscn`。
+每条测试都是 `tests` 目录下一层的 `extends Node` 脚本，文件名不以 `_` 开头。`_test_entry.gd` 是入口，不参与测试。不带参数时跑 `smoke`。CI 跑这一条。不要为测试建 `.tscn`。不要递归子目录。
 
 ## 时间上限
 
@@ -18,9 +18,10 @@ Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试�
 python .engine_test.py
 python .engine_test.py --id-smoke
 python .engine_test.py --id-monkey
+python .engine_test.py --all
 ```
 
-`--id-` 后面是测试名。不写参数就是 `smoke`。`--id-smoke` 和默认是同一条。
+`--id-` 后面是测试名。不写参数就是 `smoke`。`--id-smoke` 和默认是同一条。`--all` 并发跑上述全部 gd。有一项失败就停掉其余项，并写出 `$ID测试失败, 详细报告见临时文件目录/test_logs/$GUID/$ID.txt`。各项日志在这个目录里，文件名是测试名。全部成功才结束。
 
 顺序固定：
 
@@ -29,6 +30,6 @@ python .engine_test.py --id-monkey
 3. 转发 Godot 的 stdout / stderr，供看日志。
 4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。
 
-`TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径。Autoload `tests/test_entry.gd` 读 `--test=`，脚本必须 `extends Node`，`load` 后 `new()`，挂到自己下面。不要 `set_script()`。
+`tests` 目录下一层、不以 `_` 开头的 gd 都会被 `--all` 纳入。导出包不接受编辑器的场景路径。Autoload `tests/_test_entry.gd` 读 `--test=`，脚本必须 `extends Node`，`load` 后 `new()`，挂到自己下面。不要 `set_script()`。
 
-模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。默认测试是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。其它测试加进 `TESTS`。
+模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。默认测试是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。其它测试放在 `tests` 目录下一层。

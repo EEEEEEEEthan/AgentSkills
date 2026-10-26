@@ -2,7 +2,7 @@ config_version=5
 
 [autoload]
 
-TestEntry="*res://tests/test_entry.gd"
+TestEntry="*res://tests/_test_entry.gd"
 
 [engine_host]
 
