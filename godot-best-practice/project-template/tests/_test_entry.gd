@@ -3,10 +3,20 @@ extends Node
 
 
 const TEST_ARGUMENT_PREFIX := "--test="
+const RUN_DIRECTORY_PREFIX := "--run-directory="
+
+
+func _init() -> void:
+	var run_directory := argument_value(RUN_DIRECTORY_PREFIX)
+	if run_directory.is_empty():
+		return
+	ProjectSettings.set_setting("application/config/use_custom_user_dir", true)
+	ProjectSettings.set_setting("application/config/custom_user_dir_name", run_directory.sha256_text())
+	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir())
 
 
 func _ready() -> void:
-	var test_script_path := test_script_path_from_arguments()
+	var test_script_path := argument_value(TEST_ARGUMENT_PREFIX)
 	if test_script_path.is_empty():
 		return
 	var test_script := load(test_script_path) as GDScript
@@ -14,8 +24,8 @@ func _ready() -> void:
 	add_child(test_node)
 
 
-func test_script_path_from_arguments() -> String:
+func argument_value(prefix: String) -> String:
 	for argument in OS.get_cmdline_user_args():
-		if argument.begins_with(TEST_ARGUMENT_PREFIX):
-			return argument.trim_prefix(TEST_ARGUMENT_PREFIX)
+		if argument.begins_with(prefix):
+			return argument.trim_prefix(prefix)
 	return ""

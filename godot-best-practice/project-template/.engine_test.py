@@ -59,34 +59,43 @@ def main(argv: list[str] | None = None) -> int:
     if args.all and selected:
         print("一次只能跑一个测试，或使用 --all", file=sys.stderr)
         return 2
-    if args.all:
-        return run_all(tests)
-    if not selected:
-        selected = [DEFAULT_TEST]
-    if len(selected) != 1 or selected[0] not in tests:
-        names = " ".join(f"--id-{name}" for name in tests)
-        print(f"一次只能跑一个测试，可选：{names} --all", file=sys.stderr)
-        return 2
-    export_directory, log_directory = create_run_directory()
-    return run_one(
-        selected[0],
-        tests[selected[0]],
-        log_directory / f"{selected[0]}.txt",
-        export_directory / selected[0],
-    )
+    if not args.all:
+        if not selected:
+            selected = [DEFAULT_TEST]
+        if len(selected) != 1 or selected[0] not in tests:
+            names = " ".join(f"--id-{name}" for name in tests)
+            print(f"一次只能跑一个测试，可选：{names} --all", file=sys.stderr)
+            return 2
+    export_directory = create_export_directory()
+    names = list(tests) if args.all else selected
+    return run_tests(names, tests, export_directory, concurrent=args.all)
 
 
-def create_run_directory() -> tuple[Path, Path]:
+def create_export_directory() -> Path:
     export_directory = (
         Path(tempfile.gettempdir()) / PROJECT.name / "test" / f"export_{uuid.uuid4()}"
     )
-    log_directory = export_directory / "logs"
-    log_directory.mkdir(parents=True)
-    return export_directory, log_directory
+    export_directory.mkdir(parents=True)
+    return export_directory
 
 
-def run_all(tests: dict[str, str]) -> int:
-    export_directory, log_directory = create_run_directory()
+def run_tests(
+    names: list[str],
+    tests: dict[str, str],
+    export_directory: Path,
+    concurrent: bool,
+) -> int:
+    export_log = export_directory / "export.txt"
+    binary = export_debug(export_directory, export_log, None, None, None)
+    export_text = export_log.read_text(encoding="utf-8") if export_log.is_file() else ""
+    export_log.unlink(missing_ok=True)
+    if binary is None:
+        name = names[0]
+        log_path = test_log_path(export_directory, name)
+        log_path.write_text(export_text, encoding="utf-8")
+        print(f"{name}测试失败, 详细报告见{log_path}", file=sys.stderr)
+        return 1
+
     cancel = threading.Event()
     processes: list[subprocess.Popen[str]] = []
     processes_lock = threading.Lock()
@@ -96,31 +105,36 @@ def run_all(tests: dict[str, str]) -> int:
     def run_named(name: str) -> int:
         if cancel.is_set():
             return 1
-        log_path = log_directory / f"{name}.txt"
-        code = run_one(
-            name,
-            tests[name],
+        run_directory = export_directory / "tests" / name
+        log_path = test_log_path(export_directory, name)
+        log_path.write_text(export_text, encoding="utf-8")
+        code = run_and_watch(
+            launch_command(binary, tests[name], run_directory),
             log_path,
-            export_directory / name,
-            cancel=cancel,
-            processes=processes,
-            processes_lock=processes_lock,
+            cancel if concurrent else None,
+            processes if concurrent else None,
+            processes_lock if concurrent else None,
+            run_directory,
         )
-        if code != 0:
+        if code != 0 and concurrent:
             with failure_lock:
                 if not cancel.is_set():
                     failed_name.append(name)
                     cancel.set()
                     stop_registered(processes, processes_lock)
+        elif code != 0:
+            failed_name.append(name)
         return code
 
-    with ThreadPoolExecutor(max_workers=max(len(tests), 1)) as pool:
-        futures = [pool.submit(run_named, name) for name in tests]
-        codes = [future.result() for future in futures]
+    if concurrent:
+        with ThreadPoolExecutor(max_workers=max(len(names), 1)) as pool:
+            codes = [future.result() for future in [pool.submit(run_named, name) for name in names]]
+    else:
+        codes = [run_named(name) for name in names]
     if failed_name:
         name = failed_name[0]
         print(
-            f"{name}测试失败, 详细报告见{log_directory / f'{name}.txt'}",
+            f"{name}测试失败, 详细报告见{test_log_path(export_directory, name)}",
             file=sys.stderr,
         )
         return 1
@@ -129,28 +143,10 @@ def run_all(tests: dict[str, str]) -> int:
     return 0
 
 
-def run_one(
-    name: str,
-    script_path: str,
-    log_path: Path,
-    export_directory: Path,
-    cancel: threading.Event | None = None,
-    processes: list[subprocess.Popen[str]] | None = None,
-    processes_lock: threading.Lock | None = None,
-) -> int:
-    del name
-    binary = export_debug(export_directory, log_path, cancel, processes, processes_lock)
-    if cancel is not None and cancel.is_set():
-        return 1
-    if binary is None:
-        return 1
-    return run_and_watch(
-        launch_command(binary, script_path),
-        log_path,
-        cancel,
-        processes,
-        processes_lock,
-    )
+def test_log_path(export_directory: Path, name: str) -> Path:
+    log_path = export_directory / "tests" / name / "test_log.txt"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    return log_path
 
 
 def export_debug(
@@ -197,8 +193,13 @@ def engine_command(*arguments: str) -> list[str]:
     return [str(ENGINE), *arguments]
 
 
-def launch_command(binary: Path, scene: str) -> list[str]:
-    return [str(binary), "--", f"--test={scene}"]
+def launch_command(binary: Path, scene: str, run_directory: Path) -> list[str]:
+    return [
+        str(binary),
+        "--",
+        f"--test={scene}",
+        f"--run-directory={run_directory}",
+    ]
 
 
 def run_and_watch(
@@ -207,12 +208,13 @@ def run_and_watch(
     cancel: threading.Event | None = None,
     processes: list[subprocess.Popen[str]] | None = None,
     processes_lock: threading.Lock | None = None,
+    working_directory: Path | None = None,
 ) -> int:
     if cancel is not None and cancel.is_set():
         return 1
     process = subprocess.Popen(
         command,
-        cwd=PROJECT,
+        cwd=working_directory or PROJECT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
