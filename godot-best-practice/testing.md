@@ -22,15 +22,16 @@
 Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `project.godot` 的 `[engine_host]`。测试入口 Autoload 也写在这个文件里。冒烟和专项都是它的一个选项，一次只跑一个：
 
 ```text
+python .engine_test.py
 python .engine_test.py --smoke
 python .engine_test.py --monkey
 ```
 
-`--smoke` 是唯一的冒烟。专项的选项名就是测试名，例如专项叫 monkey 就是 `--monkey`。CI 只跑 `--smoke`。
+不带参数就是冒烟。`--smoke` 也是这一条。专项的选项名就是测试名，例如专项叫 monkey 就是 `--monkey`。CI 只跑冒烟。
 
 顺序固定：
 
-1. 先 `--import` 一次，让资源跟上当前工程，再把 debug 包导出到临时目录下的 GUID 子目录，避免并发写到同一路径。
+1. 把 debug 包导出到临时目录下的 GUID 子目录，避免并发写到同一路径。导出时引擎会自己导入资源。
 2. 用该包跑对应的 GDScript，不在编辑器里跑。
 3. 转发 Godot 的 stdout / stderr，供看日志。
 4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。

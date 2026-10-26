@@ -45,7 +45,7 @@ macOS 能下载并打开编辑器。
 拷进去之后直接：
 
 ```text
-python .engine_test.py --smoke
+python .engine_test.py
 ```
 
 `.engine_test.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。冒烟是 `tests/smoke.gd`，游戏进程起来即通过。专项再加进 `TESTS`。见 [testing.md](testing.md)。

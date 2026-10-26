@@ -3,9 +3,10 @@
 
 一次只跑一个：
 
+  python .engine_test.py
   python .engine_test.py --smoke
 
-先导入资源，再把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
+先把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
 出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。
 Autoload tests/test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到自己下面。测试不使用 tscn。
 """
@@ -42,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument(f"--{name}", action="store_true", help=TESTS[name])
     args = parser.parse_args(argv)
     selected = [name for name in TESTS if getattr(args, name)]
+    if not selected:
+        selected = ["smoke"]
     if len(selected) != 1:
         names = " ".join(f"--{name}" for name in TESTS)
         print(f"一次只能跑一个测试，可选：{names}", file=sys.stderr)
@@ -55,9 +58,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def export_debug(export_dir: Path) -> Path | None:
-    imported = run_and_watch(engine_command("--headless", "--path", str(PROJECT), "--import"))
-    if imported != 0:
-        return None
     output_dir = export_dir / str(uuid.uuid4())
     output_dir.mkdir(parents=True)
     output = output_dir / ("game.exe" if sys.platform == "win32" else "game")
