@@ -14,11 +14,16 @@ Autoload tests/_test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
+import urllib.request
 import uuid
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -66,9 +71,77 @@ def main(argv: list[str] | None = None) -> int:
             names = " ".join(f"--id-{name}" for name in tests)
             print(f"一次只能跑一个测试，可选：{names} --all", file=sys.stderr)
             return 2
+    prepare_export_templates(load_engine_module())
     export_directory = create_export_directory()
     names = list(tests) if args.all else selected
     return run_tests(names, tests, export_directory, concurrent=args.all)
+
+
+def load_engine_module():
+    spec = importlib.util.spec_from_file_location("project_engine", ENGINE)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载 {ENGINE}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def prepare_export_templates(engine_module) -> None:
+    executable = engine_module.prepare_engine()
+    version_result = subprocess.run(
+        [str(executable), "--version"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    template_version = version_result.stdout.strip().split(".official", 1)[0]
+    if not template_version:
+        raise RuntimeError(f"无法解析导出模板版本：{version_result.stdout!r}")
+    templates_directory = godot_export_templates_directory(template_version)
+    if (templates_directory / "version.txt").is_file():
+        print(f"导出模板已存在，跳过下载：{templates_directory}", file=sys.stderr)
+        return
+    if templates_directory.exists():
+        shutil.rmtree(templates_directory)
+    templates_directory.mkdir(parents=True)
+    config = engine_module.load_engine_config()
+    archive_path = templates_directory / "export_templates.tpz"
+    download_url = (
+        "https://downloads.godotengine.org/"
+        f"?version={config['version']}&flavor={config['flavor']}&slug=export_templates.tpz"
+    )
+    print(f"下载导出模板 {template_version}：{download_url}", file=sys.stderr)
+    request = urllib.request.Request(download_url, headers={"User-Agent": "godot-best-practice"})
+    with urllib.request.urlopen(request) as response, archive_path.open("wb") as archive_file:
+        shutil.copyfileobj(response, archive_file)
+    extract_directory = templates_directory / "extract"
+    extract_directory.mkdir()
+    with zipfile.ZipFile(archive_path) as archive:
+        archive.extractall(extract_directory)
+    packed_templates = extract_directory / "templates"
+    if not packed_templates.is_dir():
+        raise RuntimeError(f"导出模板压缩包里没有 templates 目录：{archive_path}")
+    for child in packed_templates.iterdir():
+        shutil.move(str(child), templates_directory / child.name)
+    shutil.rmtree(extract_directory)
+    archive_path.unlink()
+    if not (templates_directory / "version.txt").is_file():
+        raise RuntimeError(f"导出模板缺少 version.txt：{templates_directory}")
+    print(f"导出模板准备完成：{templates_directory}", file=sys.stderr)
+
+
+def godot_export_templates_directory(template_version: str) -> Path:
+    if sys.platform == "win32":
+        data_directory = Path(os.environ["APPDATA"]) / "Godot"
+    elif sys.platform == "darwin":
+        data_directory = Path.home() / "Library" / "Application Support" / "Godot"
+    else:
+        data_home = os.environ.get("XDG_DATA_HOME")
+        data_directory = Path(data_home) if data_home else Path.home() / ".local" / "share"
+        data_directory = data_directory / "Godot"
+    return data_directory / "export_templates" / template_version
 
 
 def create_export_directory() -> Path:
