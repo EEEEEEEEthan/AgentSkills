@@ -45,9 +45,6 @@ unique name / `%` 只能在同一个 tscn 内互用。跨子 tscn 或外部 tscn
 只被引用一次的资源必须 builtin（嵌入 `.tscn`）；复用两次以上才拆独立 `.gd`。嵌入脚本避免参数名遮蔽引擎成员；`extends` 必须与挂载节点类型一致。
 [entries/embedded-scene-script.md](entries/embedded-scene-script.md)
 
-同一 `.tscn` 内两端都已存在的静态信号，优先在检视器里连接并写入场景文件。
-[entries/scene-signals-inspector.md](entries/scene-signals-inspector.md)
-
 CanvasItem shader 想共享材质时，不要把 `sampler2D` 当作 `instance uniform`；改用节点自带纹理通道或别的共享承载方式。
 [entries/canvas-item-shared-material-textures.md](entries/canvas-item-shared-material-textures.md)
 
