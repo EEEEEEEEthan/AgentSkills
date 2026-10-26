@@ -48,4 +48,4 @@ macOS 能下载并打开编辑器。
 python .engine_test.py
 ```
 
-`.engine_test.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。冒烟是 `tests/smoke.gd`，游戏进程起来即通过。专项再加进 `TESTS`。见 [testing.md](testing.md)。
+`.engine_test.py` 通过旁边的 `.engine.bat` / `.engine.sh` 调引擎。不带参数跑 `tests/smoke.gd`，游戏进程起来即通过。其它测试加进 `TESTS`，用 `--id-` 加测试名。见 [testing.md](testing.md)。

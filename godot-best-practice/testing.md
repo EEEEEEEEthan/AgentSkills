@@ -1,17 +1,10 @@
 # Godot 自动化测试最佳实践
 
-冒烟唯一、专项可复用、时限写在测试代码里、由 Python 出 debug 包再跑。
-
-## 两层
-
-- **冒烟**：唯一。覆盖大部分游戏流程，不是全部。CI 只跑这一条。
-- **专项**：很多条，每条覆盖完整 case。开发结束自测时跑。冒烟直接调用其中的某个或某些方法，不把流程再写一遍。
-
-每个测试脚本都 `extends Node`，冒烟和专项一样。不要为测试建 `.tscn`。
+每条测试都是一个 `extends Node` 的 GDScript，走同一条启动路径。不带参数时跑 `smoke`。CI 跑这一条。不要为测试建 `.tscn`。
 
 ## 时间上限
 
-冒烟和专项的入口都在测试代码里写死时间上限。超时即失败。上限取恰好能通过的最短时间。
+每条测试的入口自己写死时间上限。超时即失败。上限取恰好能通过的最短时间。
 
 ## 断言
 
@@ -19,15 +12,15 @@
 
 ## 启动
 
-Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `project.godot` 的 `[engine_host]`。测试入口 Autoload 也写在这个文件里。冒烟和专项都是它的一个选项，一次只跑一个：
+Godot 捕获不了脚本报错，编辑器运行和真包也不一致。测试由一个 Python 脚本启动。它调用项目里的 `.engine.bat` / `.engine.sh`（见 [setup.md](setup.md)），不写死本机 Godot 路径。版本和安装目录在 `project.godot` 的 `[engine_host]`。测试入口 Autoload 也写在这个文件里。一次只跑一个：
 
 ```text
 python .engine_test.py
-python .engine_test.py --smoke
-python .engine_test.py --monkey
+python .engine_test.py --id-smoke
+python .engine_test.py --id-monkey
 ```
 
-不带参数就是冒烟。`--smoke` 也是这一条。专项的选项名就是测试名，例如专项叫 monkey 就是 `--monkey`。CI 只跑冒烟。
+`--id-` 后面是测试名。不写参数就是 `smoke`。`--id-smoke` 和默认是同一条。
 
 顺序固定：
 
@@ -38,4 +31,4 @@ python .engine_test.py --monkey
 
 `TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径。Autoload `tests/test_entry.gd` 读 `--test=`，脚本必须 `extends Node`，`load` 后 `new()`，挂到自己下面。不要 `set_script()`。
 
-模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。初始冒烟是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。专项加进 `TESTS`。
+模板在 [project-template/.engine_test.py](project-template/.engine_test.py)，和 `.engine.bat` / `.engine.sh` 一起在安装时拷进仓库。它只通过这两个脚本启动引擎。默认测试是 [project-template/tests/smoke.gd](project-template/tests/smoke.gd)。其它测试加进 `TESTS`。

@@ -4,7 +4,7 @@
 一次只跑一个：
 
   python .engine_test.py
-  python .engine_test.py --smoke
+  python .engine_test.py --id-smoke
 
 先把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
 出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。
@@ -27,6 +27,7 @@ EXPORT_PRESET = "Windows Desktop Test" if sys.platform == "win32" else "Linux De
 TESTS: dict[str, str] = {
     "smoke": "res://tests/smoke.gd",
 }
+DEFAULT_TEST = "smoke"
 
 OFFENDING_PREFIXES = (
     "SCRIPT ERROR:",
@@ -40,13 +41,13 @@ OFFENDING_PREFIXES = (
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="导出 debug 包并跑一个测试")
     for name in TESTS:
-        parser.add_argument(f"--{name}", action="store_true", help=TESTS[name])
+        parser.add_argument(f"--id-{name}", dest=name, action="store_true", help=TESTS[name])
     args = parser.parse_args(argv)
     selected = [name for name in TESTS if getattr(args, name)]
     if not selected:
-        selected = ["smoke"]
+        selected = [DEFAULT_TEST]
     if len(selected) != 1:
-        names = " ".join(f"--{name}" for name in TESTS)
+        names = " ".join(f"--id-{name}" for name in TESTS)
         print(f"一次只能跑一个测试，可选：{names}", file=sys.stderr)
         return 2
     test_name = selected[0]
