@@ -30,20 +30,7 @@ Linux，以及装了 bash 的 macOS：
 
 不带参数时打开编辑器。后面的参数原样交给 Godot。引擎不在配置目录里时会从 `downloads.godotengine.org` 下载。
 
-macOS 能下载并打开编辑器。桌面导出目前只有 Windows 和 Linux 预设。
-
-## 导出
-
-```bat
-.engine_export.bat
-.engine_export_and_run.bat
-```
-
-```bash
-./.engine_export.sh
-```
-
-导出前走同一套下载。
+macOS 能下载并打开编辑器。
 
 ## 拷进项目
 
