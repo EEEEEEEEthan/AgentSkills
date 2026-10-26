@@ -12,11 +12,8 @@ description: Godot 开发规范（场景架构、引擎行为、编码规范等�
 能写成 `.tscn` 的结构、引用和信号连接就写进场景；运行时只做场景表达不了的行为。
 [entries/prefer-static-tscn.md](entries/prefer-static-tscn.md)
 
-目录按功能分，不建 `scripts/`、`tscns/`、`assets/`。某个 tscn 和只有它引用的脚本、场景、音乐、图片放同一目录；第二处引用出现时，把该资源从原 tscn 目录拿到共同上层。上层太挤时，再开一个只收该层跨功能共用资源的公共目录。
+目录按功能分，不建 `scripts/`、`tscns/`、`assets/`。某个 tscn 和只有它引用的资源放同一目录：根脚本是同目录同名薄 `.gd`，其余逻辑放子节点 builtin。第二处引用出现时拿到共同上层；上层太挤时再开该层的公共目录。继承场景例外。
 [entries/group-by-feature.md](entries/group-by-feature.md)
-
-除**继承场景**外：根脚本为同文件夹同名 `.gd`（尽量薄，作对外边界）；具体功能在 tscn 内子节点 builtin 实现（可访问场景内含私有成员），除非有复用可能。
-[entries/tscn-root-script-same-name-gd.md](entries/tscn-root-script-same-name-gd.md)
 
 每个 `.tscn` 不访问场景树外节点/其它 tscn；与父级等通讯用信号；Autoload 可直接访问。
 [entries/tscn-signal-boundary.md](entries/tscn-signal-boundary.md)
