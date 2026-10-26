@@ -67,13 +67,26 @@ def main(argv: list[str] | None = None) -> int:
         names = " ".join(f"--id-{name}" for name in tests)
         print(f"一次只能跑一个测试，可选：{names} --all", file=sys.stderr)
         return 2
-    return run_one(selected[0], tests[selected[0]], None)
+    export_directory, log_directory = create_run_directory()
+    return run_one(
+        selected[0],
+        tests[selected[0]],
+        log_directory / f"{selected[0]}.txt",
+        export_directory / selected[0],
+    )
+
+
+def create_run_directory() -> tuple[Path, Path]:
+    export_directory = (
+        Path(tempfile.gettempdir()) / PROJECT.name / "test" / f"export_{uuid.uuid4()}"
+    )
+    log_directory = export_directory / "logs"
+    log_directory.mkdir(parents=True)
+    return export_directory, log_directory
 
 
 def run_all(tests: dict[str, str]) -> int:
-    run_id = uuid.uuid4()
-    log_directory = Path(tempfile.gettempdir()) / "test_logs" / str(run_id)
-    log_directory.mkdir(parents=True)
+    export_directory, log_directory = create_run_directory()
     cancel = threading.Event()
     processes: list[subprocess.Popen[str]] = []
     processes_lock = threading.Lock()
@@ -88,6 +101,7 @@ def run_all(tests: dict[str, str]) -> int:
             name,
             tests[name],
             log_path,
+            export_directory / name,
             cancel=cancel,
             processes=processes,
             processes_lock=processes_lock,
@@ -118,37 +132,36 @@ def run_all(tests: dict[str, str]) -> int:
 def run_one(
     name: str,
     script_path: str,
-    log_path: Path | None,
+    log_path: Path,
+    export_directory: Path,
     cancel: threading.Event | None = None,
     processes: list[subprocess.Popen[str]] | None = None,
     processes_lock: threading.Lock | None = None,
 ) -> int:
     del name
-    with tempfile.TemporaryDirectory(prefix="godot-test-", ignore_cleanup_errors=True) as export_dir:
-        binary = export_debug(Path(export_dir), log_path, cancel, processes, processes_lock)
-        if cancel is not None and cancel.is_set():
-            return 1
-        if binary is None:
-            return 1
-        return run_and_watch(
-            launch_command(binary, script_path),
-            log_path,
-            cancel,
-            processes,
-            processes_lock,
-        )
+    binary = export_debug(export_directory, log_path, cancel, processes, processes_lock)
+    if cancel is not None and cancel.is_set():
+        return 1
+    if binary is None:
+        return 1
+    return run_and_watch(
+        launch_command(binary, script_path),
+        log_path,
+        cancel,
+        processes,
+        processes_lock,
+    )
 
 
 def export_debug(
     export_dir: Path,
-    log_path: Path | None,
+    log_path: Path,
     cancel: threading.Event | None,
     processes: list[subprocess.Popen[str]] | None,
     processes_lock: threading.Lock | None,
 ) -> Path | None:
-    output_dir = export_dir / str(uuid.uuid4())
-    output_dir.mkdir(parents=True)
-    output = output_dir / ("game.exe" if sys.platform == "win32" else "game")
+    export_dir.mkdir(parents=True, exist_ok=True)
+    output = export_dir / ("game.exe" if sys.platform == "win32" else "game")
     command = engine_command(
         "--headless",
         "--path",
@@ -162,11 +175,8 @@ def export_debug(
     binary = exported_binary(output)
     if binary is None:
         message = f"导出产物不存在：{output}\n"
-        if log_path is None:
-            print(message, file=sys.stderr, end="")
-        else:
-            with log_path.open("a", encoding="utf-8") as log_file:
-                log_file.write(message)
+        with log_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(message)
         return None
     return binary
 
@@ -193,7 +203,7 @@ def launch_command(binary: Path, scene: str) -> list[str]:
 
 def run_and_watch(
     command: list[str],
-    log_path: Path | None = None,
+    log_path: Path,
     cancel: threading.Event | None = None,
     processes: list[subprocess.Popen[str]] | None = None,
     processes_lock: threading.Lock | None = None,
@@ -211,7 +221,7 @@ def run_and_watch(
         bufsize=1,
     )
     register(process, processes, processes_lock)
-    log_file = log_path.open("a", encoding="utf-8") if log_path is not None else None
+    log_file = log_path.open("a", encoding="utf-8")
     offending = False
     assert process.stdout is not None
     try:
@@ -219,26 +229,23 @@ def run_and_watch(
             if cancel is not None and cancel.is_set():
                 stop(process)
                 break
-            if log_file is None:
+            log_file.write(raw_line)
+            log_file.flush()
+            if processes is None:
                 sys.stdout.write(raw_line)
                 sys.stdout.flush()
-            else:
-                log_file.write(raw_line)
-                log_file.flush()
             line = raw_line.strip()
             if any(line.startswith(prefix) for prefix in OFFENDING_PREFIXES):
                 offending = True
                 stop(process)
                 notice = f"日志出现错误或警告，已停止：{line}\n"
-                if log_file is None:
+                log_file.write(notice)
+                log_file.flush()
+                if processes is None:
                     print(notice, file=sys.stderr, end="")
-                else:
-                    log_file.write(notice)
-                    log_file.flush()
                 break
     finally:
-        if log_file is not None:
-            log_file.close()
+        log_file.close()
     return_code = process.wait()
     unregister(process, processes, processes_lock)
     if offending or (cancel is not None and cancel.is_set() and return_code != 0):

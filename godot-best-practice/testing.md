@@ -21,11 +21,11 @@ python .engine_test.py --id-monkey
 python .engine_test.py --all
 ```
 
-`--id-` 后面是测试名。不写参数就是 `smoke`。`--id-smoke` 和默认是同一条。`--all` 并发跑上述全部 gd。有一项失败就停掉其余项，并写出 `$ID测试失败, 详细报告见临时文件目录/test_logs/$GUID/$ID.txt`。各项日志在这个目录里，文件名是测试名。全部成功才结束。
+`--id-` 后面是测试名。不写参数就是 `smoke`。`--id-smoke` 和默认是同一条。`--all` 并发跑上述全部 gd。有一项失败就停掉其余项，并写出 `$ID测试失败, 详细报告见临时文件目录/$PROJECT_NAME/test/export_$GUID/logs/$ID.txt`。各项日志在这个 `logs` 目录里，文件名是测试名。全部成功才结束。
 
 顺序固定：
 
-1. 把 debug 包导出到临时目录下的 GUID 子目录，避免并发写到同一路径。导出时引擎会自己导入资源。
+1. 把 debug 包导出到临时文件目录下的 `$PROJECT_NAME/test/export_$GUID/`。`$PROJECT_NAME` 是仓库目录名。并发时每项写到 `export_$GUID/$ID/`。导出时引擎会自己导入资源。
 2. 用该包跑对应的 GDScript，不在编辑器里跑。
 3. 转发 Godot 的 stdout / stderr，供看日志。
 4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。
