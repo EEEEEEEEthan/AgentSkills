@@ -7,7 +7,7 @@
 - **冒烟**：唯一。覆盖大部分游戏流程，不是全部。CI 只跑这一条。
 - **专项**：很多条，每条覆盖完整 case。开发结束自测时跑。冒烟直接调用其中的某个或某些方法，不把流程再写一遍。
 
-两者都用 GDScript。
+两者都是 GDScript，脚本 `extends Node`。不要为测试建 `.tscn`。
 
 ## 时间上限
 
@@ -33,6 +33,8 @@ python test_runner.py --monkey
 1. 先 `--import` 一次，让资源跟上当前工程，再把 debug 包导出到临时目录下的 GUID 子目录，避免并发写到同一路径。
 2. 用该包跑对应的 GDScript，不在编辑器里跑。
 3. 转发 Godot 的 stdout / stderr，供看日志。
-4. 输出里一出现错误或警告就立刻停，不等场景自己退出，也不等超时。
+4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。
+
+`TESTS` 的值是 `res://tests/.../*.gd`。导出包不接受编辑器的场景路径，游戏入口读 `--test=`，`load` 该脚本后 `new()`，挂到根节点并设为当前场景。不要 `set_script()`，也不要 `change_scene_to_file()`。
 
 模板是同目录的 [test_runner.py](test_runner.py)。拷进项目后改引擎路径、导出预设和 `TESTS`。

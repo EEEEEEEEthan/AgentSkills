@@ -6,9 +6,9 @@
   python test_runner.py --smoke
   python test_runner.py --monkey
 
-先导入资源，再把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的场景。stdout / stderr 原样打出。
+先导入资源，再把 debug 包导出到临时目录下的 GUID 子目录，然后用该包跑 TESTS 里对应的 GDScript。stdout / stderr 原样打出。
 出现错误或警告立刻结束本次拉起的进程。时间上限写在 GDScript 入口里，不在这里。
-游戏入口读取用户参数 --test=res://... 并切到该场景；导出包不接受编辑器的场景路径参数。
+游戏入口读取 --test=res://....gd，load 后 new() 挂到根节点。测试不使用 tscn。导出包不接受编辑器的场景路径参数。
 """
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ EXPORT_PRESET = "Windows Desktop"
 # 含 project.godot 的目录。
 PROJECT = Path(".")
 
-# 选项名 -> 场景。冒烟只有 smoke。其余每一项是一条专项。
+# 选项名 -> 脚本。冒烟只有 smoke。其余每一项是一条专项。不要写成 tscn。
 TESTS: dict[str, str] = {
-    "smoke": "res://tests/smoke/smoke.tscn",
-    "monkey": "res://tests/special/monkey.tscn",
+    "smoke": "res://tests/smoke/smoke.gd",
+    "monkey": "res://tests/special/monkey.gd",
 }
 
 # Godot 把脚本错误、引擎错误和警告打成这几种开头。
