@@ -1,5 +1,5 @@
 ---
-name: godot-dev
+name: godot-best-practice
 description: Godot 最佳实践。编写、审查或改 Godot 项目时使用。
 ---
 
