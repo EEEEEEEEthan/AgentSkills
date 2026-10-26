@@ -7,7 +7,7 @@ description: Godot 最佳实践。编写、审查或改 Godot 项目时使用。
 
 仍是同一个技能。先读本文件，再读与手头问题对应的一层；落到具体问题时再读该层里的条目。两层都要读完再动手，不要停在分类文件。
 
-## 安装
+## 初始化godot工程
 
 用仓库脚本下载并启动 Godot，版本写在 `.engine-config.toml`。`.engine` 自己下载，不用先跑准备脚本。
 [setup.md](setup.md)
