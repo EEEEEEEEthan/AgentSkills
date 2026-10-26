@@ -57,7 +57,7 @@ _control_window = get_tree().current_scene.get_node(^\"ControlWindow\") as Windo
 
 ### 4. 信号连接写在场景里
 
-同一 `.tscn` 内发射端、接收端都已存在的静态连接，用检视器连好并保留 `[connection ...]`，见 [scene-signals-inspector.md](scene-signals-inspector.md)。嵌入脚本只写槽函数，不在 `_ready()` 里重复 `connect`。
+同一 `.tscn` 内发射端、接收端都已存在的静态连接，用检视器连好并保留 `[connection ...]`，见 [prefer-static-tscn.md](prefer-static-tscn.md)。嵌入脚本只写槽函数，不在 `_ready()` 里重复 `connect`。
 
 ### 5. 一个节点一段嵌入逻辑
 
@@ -70,7 +70,7 @@ _control_window = get_tree().current_scene.get_node(^\"ControlWindow\") as Windo
 ## 维护注意
 
 - 改嵌入源码后保存场景；合并冲突时关注 `script/source` 多行字符串块。
-- 字符串里的 `"` 在 `.tscn` 里会转义，**优先在 Godot 脚本编辑器里改**，少手改 `.tscn` 正文。
+- `script/source` 里的 `"` 必须写成 `\"`，否则会截断字符串。
 - 嵌入脚本一般**不加** `class_name`；跨场景访问用场景结构、`get_node` 或显式类型转换（`as Game`）。
 
 ## 与本仓库的对应关系
