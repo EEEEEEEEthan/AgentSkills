@@ -140,7 +140,7 @@ def godot_export_templates_directory(template_version: str) -> Path:
     else:
         data_home = os.environ.get("XDG_DATA_HOME")
         data_directory = Path(data_home) if data_home else Path.home() / ".local" / "share"
-        data_directory = data_directory / "Godot"
+        data_directory = data_directory / "godot"
     return data_directory / "export_templates" / template_version
 
 
@@ -241,9 +241,10 @@ def export_debug(
         EXPORT_PRESET,
         str(output),
     ]
-    if run_and_watch(command, log_path, cancel, processes, processes_lock) != 0:
-        return None
+    code = run_and_watch(command, log_path, cancel, processes, processes_lock)
     binary = exported_binary(output)
+    if code != 0 and binary is None:
+        return None
     if binary is None:
         message = f"导出产物不存在：{output}\n"
         with log_path.open("a", encoding="utf-8") as log_file:
@@ -263,12 +264,17 @@ def exported_binary(output: Path) -> Path | None:
 
 
 def launch_command(binary: Path, scene: str, run_directory: Path) -> list[str]:
-    return [
-        str(binary),
-        "--",
-        f"--test={scene}",
-        f"--run-directory={run_directory}",
-    ]
+    command = [str(binary)]
+    if sys.platform.startswith("linux"):
+        command.extend(["--display-driver", "headless", "--audio-driver", "Dummy"])
+    command.extend(
+        [
+            "--",
+            f"--test={scene}",
+            f"--run-directory={run_directory}",
+        ]
+    )
+    return command
 
 
 def run_and_watch(

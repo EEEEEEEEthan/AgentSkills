@@ -87,6 +87,9 @@ def engine_executable(config: dict[str, str] | None = None) -> Path:
 
 def prepare_engine() -> Path:
     executable = engine_executable()
+    marker = executable.parent / "._sc_"
+    if marker.is_file():
+        marker.unlink()
     if executable.is_file():
         print(f"引擎已存在，跳过下载：{executable}", file=sys.stderr)
         return executable
@@ -121,7 +124,6 @@ def prepare_engine() -> Path:
                 leftover.rmdir()
     if not executable.is_file():
         raise RuntimeError(f"引擎可执行文件不存在：{executable}")
-    (destination / "._sc_").touch()
     if host_kind() != "windows":
         executable.chmod(executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     print(f"引擎准备完成：{executable}", file=sys.stderr)

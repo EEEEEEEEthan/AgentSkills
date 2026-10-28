@@ -23,12 +23,12 @@ python .engine_test.py --all
 
 `--id-` 后面是测试名。不写参数就是 `smoke`。`--id-smoke` 和默认是同一条。`--all` 并发跑上述全部 gd。有一项失败就停掉其余项，并写出 `$ID测试失败, 详细报告见临时文件目录/$PROJECT_NAME/test/export_$GUID/tests/$ID/test_log.txt`。全部成功才结束。
 
-引擎放在 `install_directory`。`.engine_test.py` 在导出前检查 Godot 默认目录里的 `export_templates/<版本>/version.txt`（Windows 为 `%APPDATA%\Godot\export_templates\<版本>\`），没有则下载 `export_templates.tpz` 并解压到那里。初始化工程时不下载导出模板。
+引擎放在 `install_directory`。`.engine_test.py` 在导出前检查 Godot 用户目录里的 `export_templates/<版本>/version.txt`。Linux 是 `$XDG_DATA_HOME/godot`，没设置 `XDG_DATA_HOME` 时是 `~/.local/share/godot`（小写 `godot`）。Windows 是 `%APPDATA%\Godot`。没有 `version.txt` 则下载 `export_templates.tpz` 并解压到那里。不要写成 `~/.local/share/Godot`，当前引擎不会去那里找 `linux_debug.x86_64`。初始化工程时不下载导出模板。
 
 顺序固定：
 
-1. 准备导出模板：没有 `version.txt` 时下载到 Godot 默认目录（Windows 为 `%APPDATA%\Godot\export_templates\<版本>\`）。再打一份 debug 包到临时文件目录下的 `$PROJECT_NAME/test/export_$GUID/` 根目录，各项测试共用。`$PROJECT_NAME` 是仓库目录名。每项的运行目录是 `export_$GUID/tests/$ID/`，日志是 `export_$GUID/tests/$ID/test_log.txt`。导出时引擎会自己导入资源。
-2. 用该包跑对应的 GDScript，不在编辑器里跑。
+1. 准备导出模板：没有 `version.txt` 时下载到 Godot 用户目录（Linux 为 `~/.local/share/godot/export_templates/<版本>/`，Windows 为 `%APPDATA%\Godot\export_templates\<版本>/`）。再打一份 debug 包到临时文件目录下的 `$PROJECT_NAME/test/export_$GUID/` 根目录，各项测试共用。`$PROJECT_NAME` 是仓库目录名。每项的运行目录是 `export_$GUID/tests/$ID/`，日志是 `export_$GUID/tests/$ID/test_log.txt`。导出时引擎会自己导入资源。包已经写出后，编辑器若异常退出，只要日志里没有错误或警告，仍用该包。
+2. 用该包跑对应的 GDScript，不在编辑器里跑。Linux 加 `--display-driver headless --audio-driver Dummy`，避免显卡和声卡的驱动警告把测试停掉。
 3. 转发 Godot 的 stdout / stderr，供看日志。
 4. 输出里一出现错误或警告就立刻停，不等测试自己退出，也不等超时。
 

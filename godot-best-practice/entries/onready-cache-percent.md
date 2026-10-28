@@ -1,8 +1,8 @@
-# 访问 unique 节点：默认 `%`，热路径才 `@onready` 缓存
+# 访问 unique 节点：直接用 `%`，有性能问题才 `@onready`
 
 ## 默认
 
-子节点用场景 unique 名时，**直接 `%UniqueName`** 即可，不必为「少一次查找」默认加 `@onready`。`%` 只解析**本 tscn** 里的 unique 节点，不能跨进子 tscn 或外部 tscn，见 [unique-name-only-within-same-tscn.md](unique-name-only-within-same-tscn.md)。
+子节点用场景 unique 名时，**直接 `%UniqueName`**。尽可能不用 `@onready`。`%` 只解析**本 tscn** 里的 unique 节点，不能跨进子 tscn 或外部 tscn，见 [unique-name-only-within-same-tscn.md](unique-name-only-within-same-tscn.md)。
 
 ```gdscript
 @export var label_text: String = "":
@@ -12,25 +12,25 @@
 		%Label.text = value
 ```
 
-## 何时 `@onready` 缓存
+`_process` 里读 `%UpperArm`、`%Forearm`、`%Hand`、`%Fingertip`、`%Grip` 也直接用 `%`。
 
-仅在**热路径**（每帧 `_process` / `_physics_process`、高频信号回调、循环内多次访问同一节点）时，用 `@onready` 在进树时解析一次，避免反复 `%` 查找：
+## 何时才 `@onready` 缓存
+
+先用 `%`。量到这里的查找成了性能问题，再改成 `@onready`，进树时解析一次：
 
 ```gdscript
 @onready var title_label: Label = %TitleLabel
 
 func _physics_process(_delta: float) -> void:
-	title_label.text = _format_title()  # 每帧调用，值得缓存
+	title_label.text = _format_title()
 ```
-
-setter、偶发刷新、属性桥接等**非热路径**继续用 `%`。
 
 ## 常见错误
 
-- 为所有 `%` 一律加 `@onready`（增加字段、与 `@export` 顺序纠缠，收益通常很小）。
-- 热路径里仍每次 `%Label` 查找（应缓存）。
+- 为了少写一次查找，就给 `%` 加上 `@onready`。
+- 还没量到性能问题，就按「热路径」把节点缓存起来。
 
 ## 为什么重要
 
-- `%` 写法短、与 unique 名一致，配置错会立刻报错（见 [unique-nodes-no-null-guard.md](unique-nodes-no-null-guard.md)）。
-- `@onready` 保留给确有性能或每帧访问需求的代码。
+- `%` 写法短、与 unique 名一致，配错会立刻报错（见 [unique-nodes-no-null-guard.md](unique-nodes-no-null-guard.md)）。
+- 提前缓存增加字段，收益通常没有。

@@ -57,7 +57,7 @@ func _on_apply_pressed() -> void:
 
 ## 允许（场景内部）
 
-- 访问本场景子树：`%NodeName`、`owner`、同场景 `get_node`。
+- 访问本场景子树：`%NodeName`、`owner`。不要 `get_node` 字符串路径。
 - 使用引擎通用 API（`DisplayServer`、`Input` 等）。
 - 访问 **Autoload**：单例实例的成员/方法（如 `Settings.save()`、`Game.xxx()`）与 **static** 方法均可。
 

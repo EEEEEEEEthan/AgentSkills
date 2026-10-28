@@ -13,12 +13,16 @@ GDScript 与 C#。先读本文件里对应语言的小节；落到具体问题�
 本节点 `ready` 发出时，同场景已声明子节点的 `_ready()` 已经跑完；setter 写法仍以场景属性桥接为准。
 [entries/export-setter-await-ready.md](entries/export-setter-await-ready.md)
 
-访问**本 tscn** 的 unique 子节点默认用 `%`；仅热路径（如每帧）才 `@onready` 缓存。不能跨进子 tscn 或外部 tscn。
+访问**本 tscn** 的 unique 子节点直接用 `%`。尽可能不用 `@onready`，除非量到性能问题再缓存。不能跨进子 tscn 或外部 tscn。
 [entries/onready-cache-percent.md](entries/onready-cache-percent.md)
 [entries/unique-name-only-within-same-tscn.md](entries/unique-name-only-within-same-tscn.md)
 
-子节点要访问所属场景根时用 `owner`，不要用 `get_parent()` 硬链
+子节点要访问所属场景根时用 `owner`，不要用 `get_parent()` 硬链。禁止 `get_node` 字符串路径：本场景用 `%`，跨场景用对方根上的公开 API
 [entries/owner-vs-get-parent.md](entries/owner-vs-get-parent.md)
+[entries/no-get-node.md](entries/no-get-node.md)
+
+要被外场景调用的场景根写 `class_name`，调用方直接调方法，不要 `call("方法名")`
+[entries/no-string-call.md](entries/no-string-call.md)
 
 对场景中应存在的 unique 节点不要写多余 null 检查，让错误尽早暴露
 [entries/unique-nodes-no-null-guard.md](entries/unique-nodes-no-null-guard.md)
@@ -32,7 +36,7 @@ GDScript 与 C#。先读本文件里对应语言的小节；落到具体问题�
 只等信号一次时直接 `await`，不要为这一次另写 `_on_*`
 [entries/await-signal-once.md](entries/await-signal-once.md)
 
-读的是稳定状态用属性；每次调用都新建对象时用 `new_` / `create_`，不要用 `get_`
+读的是稳定状态用属性；无参、只交出已有节点或算好的值时也用属性，不要写成无参方法。每次调用都新建对象时用 `new_` / `create_`，不要用 `get_`
 [entries/property-vs-method-naming.md](entries/property-vs-method-naming.md)
 
 懒加载资源用与语义同名的 `var` + getter，每一项只判断自己的成员

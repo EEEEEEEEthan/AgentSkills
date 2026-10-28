@@ -54,4 +54,4 @@ var value: float:
 ## 关联
 
 - [property-setter-self-assign.md](property-setter-self-assign.md) — 同名赋值与省略 getter
-- [onready-cache-percent.md](onready-cache-percent.md) — 热路径才缓存，桥接 setter 里用 `%` 即可
+- [onready-cache-percent.md](onready-cache-percent.md) — 尽可能不用 `@onready`，桥接 setter 里用 `%`
