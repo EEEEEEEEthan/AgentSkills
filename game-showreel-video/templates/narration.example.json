@@ -1,0 +1,201 @@
+{
+  "project": "<项目名> 2026-11-11 今日工作成果",
+  "fps": 30,
+  "chapters": [
+    {
+      "id": "ch0_title",
+      "title": "2026-11-11 今日工作成果",
+      "issues": [],
+      "shots": [
+        {
+          "id": "title_card",
+          "caption": "37 个需求 · 120 条提交 · 494 个文件",
+          "narration": "",
+          "gap": 0.0,
+          "seconds": 5.0
+        }
+      ]
+    },
+    {
+      "id": "ch1_terrain",
+      "title": "地形与美术",
+      "issues": ["#230", "#238", "#217"],
+      "shots": [
+        {
+          "id": "waterfall_wide",
+          "caption": "水帘与挡水岩壁，水已成为一种地形类型 #230",
+          "narration": "水帘、挡水岩壁与水花，水已经是一种地形类型",
+          "gap": 0.6
+        },
+        {
+          "id": "waterfall_cliff",
+          "caption": "崖顶水转角成岩，高地碎裂长出河口三角洲 #238",
+          "narration": "崖顶水转角成岩，高地按层变稀，河口长出了三角洲",
+          "gap": 0.6
+        },
+        {
+          "id": "waterfall_pull",
+          "caption": "河岸碎石与草地坡，岩石坡道取代占位草坡 #217",
+          "narration": "河岸铺碎石与草地坡，岩石坡道取代了占位草坡",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "ch2_plants",
+      "title": "植被风摆",
+      "issues": ["#242"],
+      "shots": [
+        {
+          "id": "plant_field",
+          "caption": "四层植被统一到世界坐标风场 #242",
+          "narration": "草簇、花丛与树冠统一到同一个世界风场",
+          "gap": 0.6
+        },
+        {
+          "id": "plant_force",
+          "caption": "风摆拆成世界摆动与本地自颤抖 #242",
+          "narration": "风摆拆成世界摆动加本地自颤，风力可调",
+          "gap": 0.6
+        },
+        {
+          "id": "plant_wave",
+          "caption": "F12 风力滑条，默认风速 0.7 #242",
+          "narration": "默认风速零点七，草浪成带状推过原野",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "ch3_building",
+      "title": "建造与交互",
+      "issues": ["#240", "#235", "#216", "#239", "#231", "#247"],
+      "shots": [        {
+          "id": "market_snap",
+          "caption": "市场吸附到最近的路，占地自动转向 #240",
+          "narration": "选中市场，幽灵自动吸附到最近的路并转向",
+          "gap": 0.6
+        },
+        {
+          "id": "market_window",
+          "caption": "市场检查器与摊位销售开关 #235",
+          "narration": "检查器里开关摊位销售，读数当场刷新",
+          "gap": 0.6
+        },
+        {
+          "id": "market_city",
+          "caption": "页面板排版 #216 #239，矩形框选拆除 #231，路障先于道路拆除 #247",
+          "narration": "页面板改成容器排版，页签浮在小地图之上",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "ch4_simulation",
+      "title": "模拟系统",
+      "issues": ["#111", "#194", "#209", "#213", "#232", "#233", "#237", "#245", "#246", "#248"],
+      "shots": [
+        {
+          "id": "grove",
+          "caption": "果园与麦场按格生长，逐棵成熟 #111 #194",
+          "narration": "果园的橄榄与葡萄逐棵成熟",
+          "gap": 0.6
+        },
+        {
+          "id": "customers",
+          "caption": "市场顾客跟队，街上不再有通勤小人 #209 #245",
+          "narration": "顾客排队跟摊，街上没有通勤小人",
+          "gap": 0.6
+        },
+        {
+          "id": "autosave",
+          "caption": "自动存档 5 档轮转，顶栏读数当场刷新 #232 #233 #237",
+          "narration": "自动存档五档轮转，顶栏当场刷新",
+          "gap": 0.6
+        },
+        {
+          "id": "migration",
+          "caption": "迁入者走进住宅占地，移民不再要求道路连通 #246 #248",
+          "narration": "迁入者走进住宅，移民不要求道路",
+          "gap": 0.6
+        },
+        {
+          "id": "event",
+          "caption": "事件改成阻塞性公告弹窗 #213",
+          "narration": "事件改成阻塞的公告弹窗",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "ch5_interface",
+      "title": "界面与相机",
+      "issues": ["#218", "#241", "#243", "#223", "#221"],
+      "shots": [
+        {
+          "id": "minimap",
+          "caption": "小地图改瓦片矩形纹理，随视角裁剪 #218",
+          "narration": "小地图改成瓦片矩形，按视角裁剪窗外部分",
+          "gap": 0.6
+        },
+        {
+          "id": "dither",
+          "caption": "相机移动时 dither 稳定不闪 #243",
+          "narration": "相机转动时 dither 稳住，画面不再闪",
+          "gap": 0.6
+        },
+        {
+          "id": "hover",
+          "caption": "删除 hover 格高光 #241，住宅层接口 #223，字体回退 #221",
+          "narration": "删掉鼠标格高光，字体回退与手刻的度符号",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "ch6_tooling",
+      "title": "工具链与质量",
+      "issues": ["#152", "#225", "#226", "#229", "#224", "#227", "#228", "#255", "#219", "#220", "#222", "#234"],
+      "shots": [
+        {
+          "id": "test_log",
+          "caption": "今日 120 条提交逐条落到 main #152 #225 #226 #229",
+          "narration": "今天两百多条改动里，提交逐条落到 main 上",
+          "gap": 0.6
+        },
+        {
+          "id": "dead_code",
+          "caption": "删除零调用接口与查询 #224 #227 #228",
+          "narration": "删掉零调用的接口、查询与重复抄写",
+          "gap": 0.6
+        },
+        {
+          "id": "tick_mechanism",
+          "caption": "tick 单 process 驱动 #255 #219，派生刷新缩到占地格 #220",
+          "narration": "tick 只剩一个 process 驱动，刷新缩到占地格",
+          "gap": 0.6
+        },
+        {
+          "id": "quality_gate",
+          "caption": "技能副本同步 #222，文档对齐 #234",
+          "narration": "技能副本同步，文档条目数与测试时限对齐",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "ch7_outro",
+      "title": "2026-11-11 今日工作成果",
+      "issues": [],
+      "shots": [
+        {
+          "id": "outro_card",
+          "caption": "37 个需求 / 120 条提交 / 494 个文件 · 全部合入 main",
+          "narration": "",
+          "gap": 0.0,
+          "seconds": 6.0
+        }
+      ]
+    }
+  ]
+}
