@@ -1,0 +1,287 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://app/film/film.gd" id="1_film"]
+[ext_resource type="FontFile" path="res://app/film/NotoSansSC-Bold.otf" id="2_font"]
+[ext_resource type="Script" path="res://app/film/engine_marker.gd" id="3_marker"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
+sky_top_color = Color(0.015, 0.03, 0.085, 1)
+sky_horizon_color = Color(0.11, 0.16, 0.29, 1)
+sky_curve = 0.12
+ground_bottom_color = Color(0.02, 0.03, 0.06, 1)
+ground_horizon_color = Color(0.11, 0.16, 0.29, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMaterial")
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.46, 0.56, 0.82, 1)
+ambient_light_energy = 0.3
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.12
+fog_enabled = true
+fog_light_color = Color(0.13, 0.18, 0.3, 1)
+fog_density = 0.009
+
+[sub_resource type="Theme" id="FilmTheme"]
+default_font = ExtResource("2_font")
+default_font_size = 30
+
+[sub_resource type="QuadMesh" id="SnowQuad"]
+size = Vector2(0.024, 0.024)
+
+[sub_resource type="StandardMaterial3D" id="SnowMaterial"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.92, 0.96, 1, 0.85)
+billboard_mode = 1
+
+[sub_resource type="ParticleProcessMaterial" id="SnowProcess"]
+emission_shape = 3
+emission_box_extents = Vector3(28, 1, 26)
+direction = Vector3(0, -1, 0)
+spread = 12.0
+initial_velocity_min = 1.0
+initial_velocity_max = 2.4
+gravity = Vector3(0.35, -0.5, 0.15)
+scale_min = 0.5
+scale_max = 1.5
+
+[node name="Film" type="Node3D"]
+script = ExtResource("1_film")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment")
+
+[node name="Moon" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-38, 148, 0)
+light_color = Color(0.62, 0.72, 1, 1)
+light_energy = 1.0
+light_angular_distance = 1.5
+shadow_enabled = true
+
+[node name="Fill" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-18, -30, 0)
+light_color = Color(0.5, 0.6, 0.9, 1)
+light_energy = 0.22
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Santa" type="Node3D" parent="World"]
+unique_name_in_owner = true
+
+[node name="Sleigh" type="Node3D" parent="World"]
+unique_name_in_owner = true
+
+[node name="Truck" type="Node3D" parent="World"]
+unique_name_in_owner = true
+
+[node name="Snow" type="GPUParticles3D" parent="World"]
+position = Vector3(0, 12, -8)
+amount = 2000
+lifetime = 8.0
+preprocess = 6.0
+visibility_aabb = AABB(-34, -14, -34, 68, 26, 68)
+process_material = SubResource("SnowProcess")
+draw_pass_1 = SubResource("SnowQuad")
+material_override = SubResource("SnowMaterial")
+
+[node name="Camera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+position = Vector3(0, 3, 8)
+fov = 40.0
+near = 0.05
+far = 400.0
+current = true
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="Root" type="Control" parent="Overlay"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = SubResource("FilmTheme")
+
+[node name="Watermark" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 46.0
+offset_top = 30.0
+offset_right = 700.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.82)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.7)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 26
+text = "栏目名 · 这期标题"
+
+[node name="Index" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 30.0
+offset_right = -46.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.65)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.6)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 24
+text = "01 / 08"
+horizontal_alignment = 2
+
+[node name="Title" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 60.0
+offset_top = -150.0
+offset_right = -60.0
+offset_bottom = -46.0
+theme_override_colors/font_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 16
+theme_override_font_sizes/font_size = 92
+text = "标题"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TitleSub" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 60.0
+offset_top = -40.0
+offset_right = -60.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.86, 0.55, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 40
+text = "副标题"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubBar" type="ColorRect" parent="Overlay/Root"]
+unique_name_in_owner = true
+z_index = -1
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = -190.0
+offset_right = -48.0
+offset_bottom = -30.0
+color = Color(0, 0, 0, 0.72)
+
+[node name="AvatarBorder" type="ColorRect" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 56.0
+offset_top = -182.0
+offset_right = 184.0
+offset_bottom = -54.0
+color = Color(0.94, 0.94, 0.94, 0.95)
+
+[node name="Avatar" type="TextureRect" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -178.0
+offset_right = 180.0
+offset_bottom = -58.0
+expand_mode = 1
+stretch_mode = 6
+
+[node name="NameTag" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 196.0
+offset_top = -188.0
+offset_right = -60.0
+offset_bottom = -152.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 30
+text = ""
+visible = false
+
+[node name="Subtitle" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 196.0
+offset_top = -150.0
+offset_right = -60.0
+offset_bottom = -38.0
+theme_override_colors/font_color = Color(0.98, 0.98, 0.96, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 30
+text = ""
+horizontal_alignment = 0
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Credits" type="Label" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 96.0
+offset_top = -28.0
+offset_right = -96.0
+offset_bottom = -6.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.45)
+theme_override_font_sizes/font_size = 16
+text = "3D 素材：polyfork.dev（CC BY 4.0）"
+horizontal_alignment = 2
+
+[node name="Marker" type="Control" parent="Overlay/Root"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 520.0
+offset_top = 250.0
+offset_right = 830.0
+offset_bottom = 470.0
+mouse_filter = 2
+script = ExtResource("3_marker")
+
+[node name="MarkerLabel" type="Label" parent="Overlay/Root/Marker"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 214.0
+offset_right = 310.0
+offset_bottom = 258.0
+theme_override_colors/font_color = Color(1, 0.32, 0.28, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 34
+text = "这里有问题？"
+horizontal_alignment = 1

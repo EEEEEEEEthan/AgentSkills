@@ -1,0 +1,55 @@
+{
+  "fps": 30,
+  "speaker": "zh_male_yunzhou_uranus_bigtts",
+  "speech_rate": 0,
+  "shots": [
+    {
+      "id": "title",
+      "who": "narrator",
+      "tag": "",
+      "caption": "二零二五年平安夜，这座小镇的居民，收到了一份特别的礼物——什么也没有。",
+      "narration": "二零二五年平安夜，这座小镇的居民，收到了一份特别的礼物——什么也没有。",
+      "gap": 0.2
+    },
+    {
+      "id": "santa",
+      "who": "alex",
+      "tag": "亚历山大·阿灵顿 · 调查员",
+      "caption": "凌晨零点，调查组在村口发现了这位老人。他已经在雪橇旁站了四个小时。",
+      "narration": "凌晨零点，调查组在村口发现了这位老人。他已经在雪橇旁站了四个小时。",
+      "gap": 0.2
+    },
+    {
+      "id": "engine",
+      "who": "alex",
+      "tag": "亚历山大·阿灵顿 · 调查员",
+      "caption": "走近科学记者注意到，雪橇的发动机不见了。",
+      "narration": "走近科学记者注意到，雪橇的发动机不见了。",
+      "gap": 0.2
+    },
+    {
+      "id": "react",
+      "who": "horace",
+      "tag": "贺瑞斯 · 管家",
+      "caption": "管家说，他什么也没看见，只听见一声响。",
+      "narration": "管家说，他什么也没看见，只听见一声响。",
+      "gap": 0.2
+    },
+    {
+      "id": "silent",
+      "who": "",
+      "tag": "",
+      "caption": "",
+      "narration": "",
+      "seconds": 4.0
+    },
+    {
+      "id": "outro",
+      "who": "narrator",
+      "tag": "",
+      "caption": "下期节目，我们调查：驯鹿到底请了什么假。",
+      "narration": "下期节目，我们调查：驯鹿到底请了什么假。",
+      "gap": 0.4
+    }
+  ]
+}
