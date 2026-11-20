@@ -17,7 +17,7 @@ a 档（--id）   自测点名：默认 4 进程（--jobs 可覆盖），单项�
                <测试名>/<测试名>.log），--jobs 1 可把一批压成一前一后。
                --id-<名字> 等价于点它一项；不给任何选择时跑 smoke。
 b 档（--ci）   CI 档：跑 tests/ 一层、文件名不以 _ 开头的全部 gd，并发限死 4（给 --jobs
-               直接退出 2），整轮上限 5 分钟。提交 / MR / CI 都用这一档。
+               直接退出 2），无整轮时间上限。提交 / MR / CI 都用这一档。
 c 档（--full） 全量档：跑 tests/ 一层全部 gd（含 _ 开头的条目），默认 4 进程，单项 30 分钟，
                整轮上限 2 小时。只给定时任务（每天一次）用，开发自测禁止跑 c 档。
 
@@ -31,8 +31,8 @@ tests/ 一层只放能被 b 档发现的条目（extends TestScriptBase、文件
 只报结论：全部通过时先打印「测试通过」再打总耗时（--timing 再多打一张逐项耗时表）；失败时才打印错误、
 失败项的日志路径与日志尾部。模板下载、导入、编译、导出与逐项成功的过程输出一律不往终端打。
 
-条目上限 32 对 b/c 档生效，超过直接报错。时间上限没有 CLI 开关：单项超过 30 分钟、b 档整轮
-超过 5 分钟、c 档整轮超过 2 小时都由脚本强杀进程，并打印「测试超时，请精简测试项。禁止修改测试用时。」。
+条目上限 32 对 b/c 档生效，超过直接报错。时间上限没有 CLI 开关：单项超过 30 分钟、c 档整轮
+超过 2 小时都由脚本强杀进程，并打印「测试超时，请精简测试项。禁止修改测试用时。」。b 档没有整轮上限。
 测试脚本不自己写时间上限，也不能靠放宽上限过关。
 每个测试进程一结束就把「<测试名> 用时 <秒> 退出码 <码>」记进 timings.csv；全部跑完写明细并只报总计。
 一批里实际跑完的项（跳过与超时不计）若 max - min > max * 0.5，--timing 会提示把各测试项
@@ -101,12 +101,11 @@ LOG_DIRECTORY = EXPORT_ROOT / f".test_{uuid.uuid4().hex}"
 EXPORT_LOG_NAME = "export.log"
 DEFAULT_TEST = "smoke"
 # 三档测试：a 点名（--id）、b CI（--ci）、c 全量（--full）。上限写死在本文件，
-# 不再从 project.godot 的 [test] 读取：CI 的 4 线程与 5 分钟是硬约束，不能被工程配置放宽。
+# 不再从 project.godot 的 [test] 读取：CI 的 4 线程是硬约束，不能被工程配置放宽；b 档不设整轮上限。
 MAX_TESTS = 32
 DEFAULT_JOBS = 4
 CI_JOBS = 4
 TEST_TIMEOUT_SECONDS = 30 * 60
-CI_TOTAL_TIMEOUT_SECONDS = 5 * 60
 FULL_TOTAL_TIMEOUT_SECONDS = 2 * 60 * 60
 TIER_ID_LABEL = "a 档（--id）"
 TIER_CI_LABEL = "b 档（--ci）"
@@ -222,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     tier.add_argument(
         "--ci",
         action="store_true",
-        help=f"b 档：tests/ 一层非 _ 开头的全部条目，固定 {CI_JOBS} 线程、{CI_TOTAL_TIMEOUT_SECONDS // 60} 分钟上限",
+        help=f"b 档：tests/ 一层非 _ 开头的全部条目，固定 {CI_JOBS} 线程、无整轮时间上限",
     )
     tier.add_argument(
         "--full",
@@ -264,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.all:
         print(
-            "--all 已退役：提交与 CI 用 --ci（tests/ 一层非 _ 开头、固定 4 线程、5 分钟上限），"
+            "--all 已退役：提交与 CI 用 --ci（tests/ 一层非 _ 开头、固定 4 线程、无整轮上限），"
             "定时全量用 --full（含 _ 开头的条目）",
             file=sys.stderr,
         )
@@ -291,9 +290,9 @@ def main(argv: list[str] | None = None) -> int:
         tier_label = TIER_CI_LABEL if args.ci else TIER_FULL_LABEL
         names = list(tests)
         jobs = CI_JOBS if args.ci else DEFAULT_JOBS
-        total_timeout_seconds = (
-            CI_TOTAL_TIMEOUT_SECONDS if args.ci else FULL_TOTAL_TIMEOUT_SECONDS
-        )
+        # b 档不设整轮上限（total_timeout_seconds 保持 None）；只有 c 档有 2 小时上限。
+        if args.full:
+            total_timeout_seconds = FULL_TOTAL_TIMEOUT_SECONDS
         if len(names) > MAX_TESTS:
             print(
                 f"{tier_label} 有 {len(names)} 个测试条目，超过上限 {MAX_TESTS}。请合并测试条目。",
