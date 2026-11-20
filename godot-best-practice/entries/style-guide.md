@@ -1,6 +1,6 @@
 # GDScript 风格指南
 
-> 正文摘录自 [Godot Engine 4.6 文档 — GDScript style guide](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_styleguide.html)（不含站点导航、页脚、用户评论等）。以下为中文译文。
+> 正文摘录自 [Godot Engine 4.7 文档 — GDScript style guide](https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_styleguide.html)（不含站点导航、页脚、用户评论等）。以下为中文译文。
 
 本风格指南列出编写优雅 GDScript 的约定，旨在鼓励写出干净、可读的代码，并在项目、讨论与教程之间保持一致性，也希望有助于自动格式化工具的发展。
 
@@ -653,11 +653,11 @@ enum Element { EARTH, WATER, AIR, FIRE }
 
 若要在编辑器中运行，把 `@tool` 放在脚本**第一行**。
 
-接着可选 `@icon`，再按需写 `class_name`（全局类型注册见 [Registering named classes](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_basics.html#doc-gdscript-basics-class-name)）。若为 [抽象类](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_basics.html#doc-gdscript-basics-abstract-class)，在 `class_name` **之前**加 `@abstract`。
+接着可选 `@icon`，再按需写 `class_name`（全局类型注册见 [Registering named classes](https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_basics.html#doc-gdscript-basics-class-name)）。若为 [抽象类](https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_basics.html#doc-gdscript-basics-abstract-class)，在 `class_name` **之前**加 `@abstract`。
 
 然后写 `extends`（若继承内置类型）。
 
-之后可写类的可选 [文档注释](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/gdscript_documentation_comments.html#doc-gdscript-documentation-comments)，说明职责、用法等。
+之后可写类的可选 [文档注释](https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_documentation_comments.html#doc-gdscript-documentation-comments)，说明职责、用法等。
 
 ```gdscript
 @abstract
@@ -763,7 +763,7 @@ func _on_state_changed(previous, new):
 
 ## 静态类型
 
-GDScript 支持 [可选静态类型](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/static_typing.html#doc-gdscript-static-typing)。
+GDScript 支持 [可选静态类型](https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/static_typing.html#doc-gdscript-static-typing)。
 
 ### 显式标注类型
 
@@ -831,4 +831,4 @@ var value := complex_function()
 # health_bar 的类型为 ProgressBar
 ```
 
-**说明：** 相对类型标注，这种方式在类型上更「[安全](https://docs.godotengine.org/en/4.6/tutorials/scripting/gdscript/static_typing.html#doc-gdscript-static-typing-safe-lines)」，但若运行时类型不匹配会**静默**变成 `null`，空安全较差，且不一定报错/警告。
+**说明：** 相对类型标注，这种方式在类型上更「[安全](https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/static_typing.html#doc-gdscript-static-typing-safe-lines)」，但若运行时类型不匹配会**静默**变成 `null`，空安全较差，且不一定报错/警告。

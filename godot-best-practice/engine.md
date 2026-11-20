@@ -5,6 +5,9 @@
 能写成 `.tscn` 的结构、引用和信号连接就写进场景；运行时只做场景表达不了的行为。
 [entries/prefer-static-tscn.md](entries/prefer-static-tscn.md)
 
+`.tscn` 里的节点默认保持可见、不透明，动态内容/资源一律放占位值，便于编辑和核对布局；需要隐藏或透明时在运行时做（初始化或信号响应里）。
+[entries/tscn-default-visible-opaque.md](entries/tscn-default-visible-opaque.md)
+
 目录按功能分，不建 `scripts/`、`tscns/`、`assets/`。某个 tscn 和只有它引用的资源放同一目录：根脚本是同目录同名薄 `.gd`，其余逻辑放子节点 builtin。第二处引用出现时拿到共同上层；上层太挤时再开该层的公共目录。继承场景例外。
 [entries/group-by-feature.md](entries/group-by-feature.md)
 
@@ -26,6 +29,9 @@ unique name / `%` 只能在同一个 tscn 内互用。跨子 tscn 或外部 tscn
 
 需要“本帧得到结果”时，优先显式触发布局或更新，不要默认拖到下一帧。
 [entries/layout-refresh.md](entries/layout-refresh.md)
+
+主题不要自行改：使用或修改 `theme_override*`、新建 `Theme`、新建或修改 `theme_type_variation` 前，必须先征得用户同意。
+[entries/theme-usage.md](entries/theme-usage.md)
 
 关键状态对齐不要长期绑在 `_process` 里“下一帧再改”；易错一帧并造成闪烁，应在数据变更处同步处理。
 [entries/frame-state-vs-process.md](entries/frame-state-vs-process.md)

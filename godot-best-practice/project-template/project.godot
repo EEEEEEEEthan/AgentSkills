@@ -6,6 +6,14 @@ TestEntry="*res://tests/_test_entry.gd"
 
 [engine_host]
 
-version="4.7.2"
-flavor="stable"
+version="4.8"
+flavor="beta2"
 install_directory="~/godots"
+dotnet="false"
+
+[test]
+
+max_tests=32
+test_timeout_minutes=1
+total_timeout_minutes=5
+jobs=4

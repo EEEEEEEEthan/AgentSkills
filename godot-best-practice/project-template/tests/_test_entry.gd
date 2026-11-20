@@ -6,6 +6,7 @@ const TEST_ARGUMENT_PREFIX := "--test="
 
 
 func _ready() -> void:
+	print("TEST_TIMING boot_ms=%d" % Time.get_ticks_msec())
 	var test_script_path := argument_value(TEST_ARGUMENT_PREFIX)
 	if test_script_path.is_empty():
 		return

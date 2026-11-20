@@ -9,7 +9,7 @@ description: Godot 最佳实践。编写、审查或改 Godot 项目时使用。
 
 ## 初始化godot工程
 
-godot环境初始化,覆盖配置本机的godot,部署自动化测试流程
+godot环境初始化,覆盖配置本机的godot,部署自动化测试流程(含可选 C#/.NET)
 [setup.md](setup.md)
 
 ## 引擎最佳实践
@@ -24,8 +24,13 @@ GDScript 与 C# 的写法、属性桥接、场景内节点访问。
 
 ## 自动化测试最佳实践
 
-冒烟、专项、时限，以及用 Python 出 debug 包再跑。
+冒烟、专项、脚本强制超时与逐项耗时，以及用 Python 出 debug 包再跑。
 [testing.md](testing.md)
+
+## 审核指引
+
+编写完成或代码审查时，必须逐项对照检查清单进行审核。
+[entries/review-checklist.md](entries/review-checklist.md)
 
 # 维护此文档
 
