@@ -4,6 +4,7 @@
   python .engine_test.py                          # a 档，等价 --id smoke
   python .engine_test.py --id-smoke
   python .engine_test.py --id smoke road_network
+  python .engine_test.py --id smoke,road_network
   python .engine_test.py --id smoke --id road_network --jobs 1
   python .engine_test.py --ci                     # b 档，提交 / MR / CI
   python .engine_test.py --ci --fail-fast --timing
@@ -13,8 +14,9 @@
 测试分三档，条目上限、并发与时间上限都写死在本文件，不再读 project.godot：
 
 a 档（--id）   自测点名：默认 4 进程（--jobs 可覆盖），单项上限 30 分钟，无总上限。
-               点名一项时前台串行跑；点名多项时并发（失败不中断其余项，日志写
-               <测试名>/<测试名>.log），--jobs 1 可把一批压成一前一后。
+               名字可用空格或逗号分隔（--id a,b,c）。点名一项时前台串行跑；点名多项时
+               同样并发、同样受 --jobs 并发上限约束、同样无总时长上限（失败不中断其余项，
+               日志写 <测试名>/<测试名>.log），--jobs 1 可把一批压成一前一后。
                --id-<名字> 等价于点它一项；不给任何选择时跑 smoke。
 b 档（--ci）   CI 档：跑 tests/ 一层、文件名不以 _ 开头的全部 gd，并发限死 4（给 --jobs
                直接退出 2），无整轮时间上限。提交 / MR / CI 都用这一档。
@@ -189,8 +191,10 @@ def discover_tests(include_underscored: bool = False) -> dict[str, str]:
 
 
 def merge_selection(args, tests: dict[str, str]) -> list[str]:
-    """--id 的点名列表与旧的 --id-<名字> 开关合并，按给定顺序去重。"""
-    ordered = list(args.ids or [])
+    """--id 的点名列表（空格或逗号分隔）与旧的 --id-<名字> 开关合并，按给定顺序去重。"""
+    ordered: list[str] = []
+    for entry in args.ids or []:
+        ordered.extend(part.strip() for part in entry.split(",") if part.strip())
     ordered.extend(name for name in tests if getattr(args, name))
     unique: list[str] = []
     for name in ordered:
@@ -235,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
         nargs="+",
         action="extend",
         metavar="NAME",
-        help="a 档：点名一个或多个测试，空格分隔；可重复给，等价于 --id-<名字> 给一个",
+        help="a 档：点名一个或多个测试，空格或逗号分隔（--id a,b,c）；可重复给，等价于 --id-<名字> 给一个",
     )
     parser.add_argument(
         "--jobs",
