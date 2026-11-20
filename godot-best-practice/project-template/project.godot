@@ -2,7 +2,7 @@ config_version=5
 
 [autoload]
 
-TestEntry="*res://tests/_test_entry.gd"
+TestEntry="*res://tests/tools/_test_entry.gd"
 
 [engine_host]
 
@@ -11,9 +11,3 @@ flavor="beta2"
 install_directory="~/godots"
 dotnet="false"
 
-[test]
-
-max_tests=32
-test_timeout_minutes=1
-total_timeout_minutes=5
-jobs=4

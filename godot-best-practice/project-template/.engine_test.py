@@ -1,35 +1,44 @@
 #!/usr/bin/env python3
 """用项目里的引擎导出 debug 包并跑测试（.engine.py 只负责定位并下载引擎）。
 
-  python .engine_test.py
+  python .engine_test.py                          # a 档，等价 --id smoke
   python .engine_test.py --id-smoke
   python .engine_test.py --id smoke road_network
   python .engine_test.py --id smoke --id road_network --jobs 1
-  python .engine_test.py --all
-  python .engine_test.py --all --fail-fast
-  python .engine_test.py --all --jobs 6 --timing
+  python .engine_test.py --ci                     # b 档，提交 / MR / CI
+  python .engine_test.py --ci --fail-fast --timing
+  python .engine_test.py --full                   # c 档，只给定时任务
+  python .engine_test.py --export --id smoke      # 出包跑（诊断用，见下）
 
-不带参数跑 smoke。--id 点名一个或多个测试，空格分隔，也可以重复给；--id-<名字> 等价于点它一项。
-点名一项时前台串行跑；点名多项时与 --all 一样并发（--jobs 控进程数、失败不中断其余项，
-日志写 <测试名>/<测试名>.log），--jobs 1 可把一批压成一前一后。
---all 并发跑 tests 目录下一层、文件名不以 _ 开头的全部 gd。
-出现错误或警告立刻结束该测试项。--all 默认等全部跑完，失败项最后逐条列出，有失败退出码 1；
+测试分三档，条目上限、并发与时间上限都写死在本文件，不再读 project.godot：
+
+a 档（--id）   自测点名：默认 4 进程（--jobs 可覆盖），单项上限 30 分钟，无总上限。
+               点名一项时前台串行跑；点名多项时并发（失败不中断其余项，日志写
+               <测试名>/<测试名>.log），--jobs 1 可把一批压成一前一后。
+               --id-<名字> 等价于点它一项；不给任何选择时跑 smoke。
+b 档（--ci）   CI 档：跑 tests/ 一层、文件名不以 _ 开头的全部 gd，并发限死 4（给 --jobs
+               直接退出 2），整轮上限 5 分钟。提交 / MR / CI 都用这一档。
+c 档（--full） 全量档：跑 tests/ 一层全部 gd（含 _ 开头的条目），默认 4 进程，单项 30 分钟，
+               整轮上限 2 小时。只给定时任务（每天一次）用，开发自测禁止跑 c 档。
+
+--all 已退役：见到它直接退出 2 并指向 --ci / --full。
+工具 / 夹具 / 预览 / 基类与建筑验收辅助脚本一律放 tests/tools/，任何档都不扫描该目录；
+tests/ 一层只放能被 b 档发现的条目（extends TestScriptBase、文件名不以 _ 开头）。
+
+出现错误或警告立刻结束该测试项。b/c 档默认等全部跑完，失败项最后逐条列出，有失败退出码 1；
 --fail-fast 则第一个失败就停掉其余测试。
 
-只报结论：全部通过时只打印总耗时（--timing 再多打一张逐项耗时表）；失败时才打印错误、
+只报结论：全部通过时先打印「测试通过」再打总耗时（--timing 再多打一张逐项耗时表）；失败时才打印错误、
 失败项的日志路径与日志尾部。模板下载、导入、编译、导出与逐项成功的过程输出一律不往终端打。
 
-条目上限、单项与全量时间上限、并发都读 project.godot 的 [test]，缺省时用内置默认值：
-max_tests=32、test_timeout_minutes=1、total_timeout_minutes=5、jobs=4。--jobs 可覆盖 jobs。
---all 的条目数超过 max_tests 直接报错。时间上限没有 CLI 开关：单项超过 test_timeout_minutes、
---all 超过 total_timeout_minutes 都由脚本强杀进程，并打印「测试超时，请精简测试项。禁止修改测试用时。」。
+条目上限 32 对 b/c 档生效，超过直接报错。时间上限没有 CLI 开关：单项超过 30 分钟、b 档整轮
+超过 5 分钟、c 档整轮超过 2 小时都由脚本强杀进程，并打印「测试超时，请精简测试项。禁止修改测试用时。」。
 测试脚本不自己写时间上限，也不能靠放宽上限过关。
 每个测试进程一结束就把「<测试名> 用时 <秒> 退出码 <码>」记进 timings.csv；全部跑完写明细并只报总计。
 一批里实际跑完的项（跳过与超时不计）若 max - min > max * 0.5，--timing 会提示把各测试项
 耗时规划得尽量接近，以发挥并发优势。
-跑前先查被跟踪的 *.uid 与 *.import：源文件已经删掉的元数据一律报错并一次列出全部路径，
-Godot 删脚本或资源时不会回收同名元数据，留着只会误导编辑器的导入。
-跑完后若工作区还有未提交的文件（含未跟踪且未被 ignore），也会报错，避免测试残留或忘记提交。
+跑完后若工作区还有未提交的文件（含未跟踪且未被 ignore），只打一行「错误：测试完毕后工作区存在未提交文件」
+并退出 1，避免测试残留或忘记提交；干净时再查失效的 .uid / .import 伴生文件，全部列出并退出 1。
 产物固定放在项目的 .export/test/ 下，可执行文件按项目名命名。每次开跑覆盖同名产物。
 每次运行建一个独立的 .export/.test_<GUID>/：
 测试日志写 <测试名>/<测试名>.log，每个测试的运行目录是 <测试名>/，开跑前清空；user:// 放在包目录的 user_data/<测试名>/，随包删除。
@@ -38,6 +47,9 @@ timings.csv（name,seconds,code,boot_ms）只作明细：seconds 是整个测试
 _test_entry.gd 挂测试节点前的启动段（引擎 + autoload + 主场景），两者相减得到用例本体；
 --timing 再把逐项耗时按降序打一张表。
 导入、构建、导出的引擎输出写 .test_<GUID>/export.log，失败时打印日志尾部。
+默认宿主是编辑器可执行文件以项目运行模式直跑（带 editor 特性，不出包）；`--export` 才导出 debug 包
+再在包里跑。出包路径目前只作诊断：实测包里 ui.tscn 嵌在 page_panel 实例里的 %OverviewMap 会整个丢，
+UI 相关条目全红（项目自身的导出问题，与测试脚本无关）。
 导出阶段只看引擎退出码与产物是否存在：引擎自己在着色器/资源上打的 ERROR 由它继续处理，不算导出失败。
 导出直接调引擎，不经 .engine.py 转交：转交层把任何 ERROR 都当成硬错误提前杀掉引擎。
 导出预设按平台选：win32 用 Windows Desktop Test，darwin 用 macOS Desktop Test（.app 目录），
@@ -49,8 +61,8 @@ dotnet=true 时先导入资源、再跑一次 --build-solutions，然后才导�
 没有这份缓存，所以缓存为空时脚本先跑一次 --import（首次约 30–45s，之后零成本）。
 --reimport 强制先重导一遍再导出，用于缓存过期（[engine_host] 版本升过、导入被打断）的情形。
 导入段不计入总计 / 导出毫秒数，失败就退出 1，不带着空缓存去导出。
-测试进程的 user:// 指到各自运行目录下的 user_data：同批并发与两条 --all 同时跑都各一份，夹具表与渲染缓存互不覆盖。
-冷缓存时（首次导入）不要并跑两路 --all：它们会同时写同一份 .godot。
+测试进程的 user:// 指到各自运行目录下的 user_data：同批并发与两条 b 档同时跑都各一份，夹具表与渲染缓存互不覆盖。
+冷缓存时（首次导入）不要并跑两路 b 档：它们会同时写同一份 .godot。
 Autoload _test_entry.gd 读取 --test=res://....gd，load 后 new() 挂到自己下面。测试不使用 tscn。
 """
 
@@ -82,27 +94,35 @@ EXPORT_ROOT = PROJECT / ".export"
 PACKAGE_DIRECTORY_NAME = "test"
 # 导出只认 .godot/imported 里已有的导入产物，不自己导入；全新检出没有这份缓存。
 IMPORT_CACHE_DIRECTORY = PROJECT / ".godot" / "imported"
+# 扫失效 .uid / .import 时跳过的目录；嵌套带 project.godot 的子工程在遍历时另判。
+SKIP_SOURCE_DIRECTORIES = {".git", ".godot", ".export", "node_modules"}
 # 每次运行一个独立的 .test_<GUID>，日志、截图与运行目录不跨次覆盖。
 LOG_DIRECTORY = EXPORT_ROOT / f".test_{uuid.uuid4().hex}"
 EXPORT_LOG_NAME = "export.log"
 DEFAULT_TEST = "smoke"
-# project.godot [test] 的缺省值：字段缺失时用这些，不报错。
-TEST_CONFIG_DEFAULTS = {
-    "max_tests": "32",
-    "test_timeout_minutes": "1",
-    "total_timeout_minutes": "5",
-    "jobs": "4",
-}
+# 三档测试：a 点名（--id）、b CI（--ci）、c 全量（--full）。上限写死在本文件，
+# 不再从 project.godot 的 [test] 读取：CI 的 4 线程与 5 分钟是硬约束，不能被工程配置放宽。
+MAX_TESTS = 32
+DEFAULT_JOBS = 4
+CI_JOBS = 4
+TEST_TIMEOUT_SECONDS = 30 * 60
+CI_TOTAL_TIMEOUT_SECONDS = 5 * 60
+FULL_TOTAL_TIMEOUT_SECONDS = 2 * 60 * 60
+TIER_ID_LABEL = "a 档（--id）"
+TIER_CI_LABEL = "b 档（--ci）"
+TIER_FULL_LABEL = "c 档（--full）"
+FULL_DISABLED_HINT = "c 档（--full）只给定时任务用，开发自测请用 --id 或 --ci"
 # --fail-fast 下因前面的测试失败而没跑完的项用这个退出码，不计入失败列表。
 SKIPPED_EXIT_CODE = -1
-# 单项超过 test_timeout_minutes 时用这个退出码，计入失败列表。
+# 单项超过 TEST_TIMEOUT_SECONDS 时用这个退出码，计入失败列表。
 TIMEOUT_EXIT_CODE = -2
 TIMINGS_FILE_NAME = "timings.csv"
 # 超时一律强杀进程，不给跳过/延长/关闭的开关；这句原文必须打出来。
 TIMEOUT_NOTICE = "测试超时，请精简测试项。禁止修改测试用时。"
 BALANCE_NOTICE = "请合理规划测试项，使每个测试项耗时尽可能相同，以充分发挥并发优势"
-# 删除脚本或资源后 Godot 不回收同名元数据：*.uid 跟着脚本与资源，*.import 跟着导入资源。
-METADATA_SUFFIXES = (".uid", ".import")
+# 并发跑时相邻两个测试进程的启动间隔（秒）：同时启动的 4 个引擎会一起去建 Vulkan swapchain，
+# 显存吃紧的机器上会随机报 VK_ERROR_OUT_OF_HOST_MEMORY。并发数不变，只错开启动。
+LAUNCH_SPACING_SECONDS = 2.0
 # 失败时最多打印多少行日志尾部：错误与中止提示总在尾部。
 LOG_TAIL_LINES = 40
 # _test_entry.gd 在挂测试节点前打一行 TEST_TIMING boot_ms=<毫秒>，用来把每个进程的启动成本
@@ -157,12 +177,13 @@ def print_log_tail(log_path: Path, tail_lines: int = LOG_TAIL_LINES) -> None:
         print_text_tail(text, str(log_path), tail_lines)
 
 
-def discover_tests() -> dict[str, str]:
+def discover_tests(include_underscored: bool = False) -> dict[str, str]:
+    """只扫 tests/ 一层：b 档跳过 _ 开头的条目，c 档全收；子目录（tests/tools/）永不进档。"""
     found: dict[str, str] = {}
     if not TESTS_DIRECTORY.is_dir():
         return found
     for path in sorted(TESTS_DIRECTORY.glob("*.gd")):
-        if path.name.startswith("_"):
+        if path.name.startswith("_") and not include_underscored:
             continue
         found[path.stem] = f"res://tests/{path.name}"
     return found
@@ -185,73 +206,115 @@ def report_unknown_tests(unknown: list[str], tests: dict[str, str]) -> None:
         matches = difflib.get_close_matches(name, tests, n=3)
         hint = "；相近的：{}".format("、".join(matches)) if matches else ""
         print(f"没有这个测试 id：{name}{hint}", file=sys.stderr)
-    print(f"测试共 {len(tests)} 项：--all 跑全部，--id <名字>... 点名一批", file=sys.stderr)
+    print(
+        f"测试共 {len(tests)} 项：--ci 跑 b 档、--full 跑 c 档、--id <名字>... 点名一批",
+        file=sys.stderr,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     engine_module = load_engine_module()
-    limits = load_test_limits(engine_module)
-    tests = discover_tests()
-    parser = argparse.ArgumentParser(description="导出 debug 包并跑测试")
-    parser.add_argument("--all", action="store_true", help="并发跑 tests 目录下全部测试")
+    # c 档要连 _ 开头的条目也列出来，才能给它们生成 --id-<名字> 与全量列表；其它档只要 b 档可见的。
+    raw_arguments = sys.argv[1:] if argv is None else list(argv)
+    tests = discover_tests(include_underscored="--full" in raw_arguments)
+    parser = argparse.ArgumentParser(description="导出 debug 包并跑三档测试")
+    tier = parser.add_mutually_exclusive_group()
+    tier.add_argument(
+        "--ci",
+        action="store_true",
+        help=f"b 档：tests/ 一层非 _ 开头的全部条目，固定 {CI_JOBS} 线程、{CI_TOTAL_TIMEOUT_SECONDS // 60} 分钟上限",
+    )
+    tier.add_argument(
+        "--full",
+        action="store_true",
+        help=f"c 档：tests/ 一层全部条目（含 _ 开头），整轮上限 {FULL_TOTAL_TIMEOUT_SECONDS // 3600} 小时，只给定时任务",
+    )
+    tier.add_argument("--all", action="store_true", help="已退役，改用 --ci（CI）或 --full（定时全量）")
+    tier.add_argument(
+        "--id",
+        dest="ids",
+        nargs="+",
+        action="extend",
+        metavar="NAME",
+        help="a 档：点名一个或多个测试，空格分隔；可重复给，等价于 --id-<名字> 给一个",
+    )
     parser.add_argument(
         "--jobs",
         type=positive_int,
         default=None,
         metavar="N",
-        help=f"同时运行的测试进程数，默认 {limits['jobs']}（project.godot [test] jobs）",
+        help=f"同时运行的测试进程数，默认 {DEFAULT_JOBS}；b 档（--ci）固定 {CI_JOBS}，不接受覆盖",
     )
     parser.add_argument("--timing", action="store_true", help="打印按耗时降序的逐项表")
     parser.add_argument(
         "--reimport", action="store_true", help="导出前强制重新导入资源（.godot 缓存过期时用）"
     )
     parser.add_argument(
-        "--fail-fast",
+        "--export",
         action="store_true",
-        help="一批里第一个失败就停止其余测试（--all 与多项 --id 都适用）",
+        help="导出 debug 包再在包里跑（默认用编辑器可执行文件直跑）；包里会丢内嵌节点，UI 相关条目会红",
     )
     parser.add_argument(
-        "--id",
-        dest="ids",
-        nargs="+",
-        action="extend",
-        metavar="NAME",
-        help="点名一个或多个测试，空格分隔；可重复给，等价于 --id-<名字> 给一个",
+        "--fail-fast",
+        action="store_true",
+        help="一批里第一个失败就停止其余测试（b/c 档与多项 --id 都适用）",
     )
     for name in tests:
         parser.add_argument(f"--id-{name}", dest=name, action="store_true", help=tests[name])
     args = parser.parse_args(argv)
+    if args.all:
+        print(
+            "--all 已退役：提交与 CI 用 --ci（tests/ 一层非 _ 开头、固定 4 线程、5 分钟上限），"
+            "定时全量用 --full（含 _ 开头的条目）",
+            file=sys.stderr,
+        )
+        return 2
+    if args.ci and args.jobs is not None:
+        print(f"b 档（--ci）固定 {CI_JOBS} 线程，不接受 --jobs", file=sys.stderr)
+        return 2
     selected = merge_selection(args, tests)
-    if args.all and selected:
-        print("--all 不能再带 --id：要么跑全部，要么点名一批", file=sys.stderr)
+    if (args.ci or args.full) and selected:
+        print(
+            "--ci / --full 不能再带 --id：要么跑一整档，要么点名一批",
+            file=sys.stderr,
+        )
         return 2
     unknown = [name for name in selected if name not in tests]
     if unknown:
         report_unknown_tests(unknown, tests)
         return 2
-    if args.all and len(tests) > limits["max_tests"]:
-        print(
-            f"--all 有 {len(tests)} 个测试条目，超过上限 {limits['max_tests']}"
-            "（project.godot [test] max_tests）。请合并测试条目。",
-            file=sys.stderr,
+    tier_label = TIER_ID_LABEL
+    names = selected or [DEFAULT_TEST]
+    jobs = args.jobs or DEFAULT_JOBS
+    total_timeout_seconds = None
+    if args.ci or args.full:
+        tier_label = TIER_CI_LABEL if args.ci else TIER_FULL_LABEL
+        names = list(tests)
+        jobs = CI_JOBS if args.ci else DEFAULT_JOBS
+        total_timeout_seconds = (
+            CI_TOTAL_TIMEOUT_SECONDS if args.ci else FULL_TOTAL_TIMEOUT_SECONDS
         )
-        return 2
-    orphans = orphaned_metadata_files()
-    if orphans:
-        print("这些元数据文件的源文件已经不在工作区，Godot 编辑器不会再清理它们：", file=sys.stderr)
-        for path in orphans:
-            print(f"  {path}", file=sys.stderr)
-        return 1
-    executable = prepare_export_templates(engine_module)
+        if len(names) > MAX_TESTS:
+            print(
+                f"{tier_label} 有 {len(names)} 个测试条目，超过上限 {MAX_TESTS}。请合并测试条目。",
+                file=sys.stderr,
+            )
+            return 2
+    if args.full:
+        # 脚本分不清调用者，只能先用提示语 + 文档约束「c 档禁止开发自测」。
+        print(FULL_DISABLED_HINT, file=sys.stderr)
+    executable = (
+        prepare_export_templates(engine_module)
+        if args.export
+        else quiet(engine_module.prepare_engine)
+    )
     # 全新检出的 .godot 缓存是空的：先导入，再编译 C#，否则引擎起不来也解析不到 [GlobalClass]。
     if not ensure_imported(executable, args.reimport):
         return 1
     if not build_project(engine_module, executable):
         return 1
-    export_directory = create_export_directory()
-    names = list(tests) if args.all else (selected or [DEFAULT_TEST])
+    export_directory = create_export_directory() if args.export else LOG_DIRECTORY
     concurrent = len(names) > 1
-    jobs = args.jobs or limits["jobs"]
     result = run_tests(
         names,
         tests,
@@ -259,49 +322,33 @@ def main(argv: list[str] | None = None) -> int:
         executable,
         concurrent=concurrent,
         jobs=jobs,
+        tier_label=tier_label,
+        exported=args.export,
         show_timing=args.timing,
         fail_fast=args.fail_fast,
-        test_timeout_seconds=limits["test_timeout_seconds"],
-        total_timeout_seconds=limits["total_timeout_seconds"] if args.all else None,
+        test_timeout_seconds=TEST_TIMEOUT_SECONDS,
+        total_timeout_seconds=total_timeout_seconds,
     )
-    dirty = uncommitted_files()
-    if dirty:
-        print("测试跑完后工作区还有未提交的文件（含未跟踪且未被 ignore）：", file=sys.stderr)
-        for line in dirty:
-            print(f"  {line}", file=sys.stderr)
+    # 先冲掉缓冲的测试结论，再做收尾检查：输出被重定向时 stdout 是块缓冲、stderr 不是，
+    # 不冲的话「测试通过」会排在下面的「未提交文件 / 失效 .uid」错误之后。
+    sys.stdout.flush()
+    if has_uncommitted_files():
+        print("错误：测试完毕后工作区存在未提交文件", file=sys.stderr)
+        return 1
+    invalid_sidecars = invalid_godot_sidecars()
+    if invalid_sidecars:
+        print("错误：发现失效的 .uid / .import 伴生文件：", file=sys.stderr)
+        for path in invalid_sidecars:
+            print(f"  {path}", file=sys.stderr)
         return 1
     return result
 
 
-def uncommitted_files() -> list[str]:
-    """返回未提交或未跟踪且未被 ignore 的文件；不是 git 仓库或没有 git 时返回空。"""
-    status = git_output(["status", "--porcelain", "--untracked-files=all"])
-    if status is None:
-        return []
-    return [line for line in status.splitlines() if line.strip()]
-
-
-def orphaned_metadata_files() -> list[str]:
-    """返回源文件已不在工作区的被跟踪元数据；不是 git 仓库或没有 git 时返回空。"""
-    tracked = git_output(["ls-files", "--", *[f"*{suffix}" for suffix in METADATA_SUFFIXES]])
-    if tracked is None:
-        return []
-    orphans: list[str] = []
-    for metadata_path in tracked.splitlines():
-        metadata_path = metadata_path.strip()
-        suffix = Path(metadata_path).suffix
-        if not metadata_path or suffix not in METADATA_SUFFIXES:
-            continue
-        if not (PROJECT / metadata_path[: -len(suffix)]).exists():
-            orphans.append(metadata_path)
-    return orphans
-
-
-def git_output(arguments: list[str]) -> str | None:
-    """跑一条只读 git 命令；不是 git 仓库或没有 git 时返回 None，调用方据此跳过检查。"""
+def has_uncommitted_files() -> bool:
+    """工作区是否有未提交或未跟踪且未被 ignore 的文件；不是 git 仓库或没有 git 时当干净。"""
     try:
         completed = subprocess.run(
-            ["git", *arguments],
+            ["git", "status", "--porcelain", "--untracked-files=all"],
             cwd=PROJECT,
             capture_output=True,
             text=True,
@@ -309,8 +356,50 @@ def git_output(arguments: list[str]) -> str | None:
             errors="replace",
         )
     except OSError:
+        return False
+    if completed.returncode != 0:
+        return False
+    return any(line.strip() for line in completed.stdout.splitlines())
+
+
+def invalid_godot_sidecars() -> list[str]:
+    """列出失效的 .uid / .import：对应源不存在，或 .import 无法解析出存在的 res:// 源。"""
+    stale: list[str] = []
+    for root, directories, files in os.walk(PROJECT):
+        # 嵌套的独立 Godot 工程有自己的 res:// 根，按本源目录解析会误报。
+        directories[:] = [
+            name
+            for name in directories
+            if name not in SKIP_SOURCE_DIRECTORIES
+            and not (Path(root) / name / "project.godot").is_file()
+        ]
+        for name in files:
+            path = Path(root) / name
+            if name.endswith(".uid"):
+                if not path.with_suffix("").exists():
+                    stale.append(path.relative_to(PROJECT).as_posix())
+            elif name.endswith(".import"):
+                source = import_source_file(path)
+                if source is None or not source.exists():
+                    stale.append(path.relative_to(PROJECT).as_posix())
+    return sorted(stale)
+
+
+def import_source_file(import_file: Path) -> Path | None:
+    """把 .import 里的 source_file 解析回源资产路径；缺字段或不是 res:// 时视为失效。"""
+    try:
+        text = import_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
         return None
-    return completed.stdout if completed.returncode == 0 else None
+    for line in text.splitlines():
+        key, _, value = line.partition("=")
+        if key.strip() != "source_file":
+            continue
+        value = value.strip().strip('"')
+        if not value.startswith("res://"):
+            return None
+        return PROJECT / value[len("res://") :]
+    return None
 
 
 def positive_int(text: str) -> int:
@@ -318,25 +407,6 @@ def positive_int(text: str) -> int:
     if value < 1:
         raise argparse.ArgumentTypeError("--jobs 至少是 1")
     return value
-
-
-def load_test_limits(engine_module) -> dict[str, float]:
-    """读 project.godot [test]；缺字段用 TEST_CONFIG_DEFAULTS。"""
-    values = engine_module.read_config_section("test", TEST_CONFIG_DEFAULTS)
-    try:
-        limits = {
-            "max_tests": int(values["max_tests"]),
-            "jobs": int(values["jobs"]),
-            "test_timeout_seconds": float(values["test_timeout_minutes"]) * 60.0,
-            "total_timeout_seconds": float(values["total_timeout_minutes"]) * 60.0,
-        }
-    except (TypeError, ValueError) as error:
-        raise RuntimeError(f"project.godot [test] 配置无效：{error}") from error
-    if limits["max_tests"] < 1 or limits["jobs"] < 1:
-        raise RuntimeError("project.godot [test] 的 max_tests 与 jobs 至少是 1")
-    if limits["test_timeout_seconds"] <= 0 or limits["total_timeout_seconds"] <= 0:
-        raise RuntimeError("project.godot [test] 的时间上限必须大于 0")
-    return limits
 
 
 def load_engine_module():
@@ -506,8 +576,9 @@ def test_run_directory(name: str) -> Path:
 
 # 测试进程的 user:// 根目录落在包目录的 user_data/<测试名> 里：同批 4 个进程各自一份，
 # 夹具表、渲染缓存、存档与偏好不再互相删改；包目录测完整个删除，不会残留 user_data。
-def isolated_user_data_environment(export_directory: Path, name: str) -> dict[str, str]:
-    user_data_directory = export_directory / "user_data" / name
+def isolated_user_data_environment(base_directory: Path, name: str) -> dict[str, str]:
+    """每个条目一份 user:// 根：偏好、存档与夹具表互不覆盖（包模式随包删，直跑留在运行目录）。"""
+    user_data_directory = base_directory / "user_data" / name
     user_data_directory.mkdir(parents=True, exist_ok=True)
     environment = os.environ.copy()
     if sys.platform == "win32":
@@ -527,34 +598,40 @@ def run_tests(
     concurrent: bool,
     jobs: int,
     show_timing: bool,
+    exported: bool = False,
     fail_fast: bool = False,
+    tier_label: str = TIER_ID_LABEL,
     test_timeout_seconds: float | None = None,
     total_timeout_seconds: float | None = None,
 ) -> int:
     started = time.monotonic()
-    all_deadline = started + total_timeout_seconds if total_timeout_seconds else None
+    batch_deadline = started + total_timeout_seconds if total_timeout_seconds else None
     processes: list[subprocess.Popen[str]] = []
     processes_lock = threading.Lock()
-    all_timed_out = threading.Event()
-    all_timer = None
-    if all_deadline is not None:
+    batch_timed_out = threading.Event()
+    batch_timer = None
+    if batch_deadline is not None:
         # 全量上限从导出前就开始算：导出卡住也要能被终止。
-        all_timer = threading.Timer(
-            max(0.0, all_deadline - time.monotonic()),
-            lambda: (all_timed_out.set(), stop_registered(processes, processes_lock)),
+        batch_timer = threading.Timer(
+            max(0.0, batch_deadline - time.monotonic()),
+            lambda: (batch_timed_out.set(), stop_registered(processes, processes_lock)),
         )
-        all_timer.daemon = True
-        all_timer.start()
+        batch_timer.daemon = True
+        batch_timer.start()
 
     try:
-        binary = export_debug(
-            executable, export_directory, processes, processes_lock, all_deadline
-        )
+        # 默认宿主是编辑器可执行文件（项目运行模式，带 editor 特性）：导出包里内嵌在别的场景里的节点
+        # （例如 ui.tscn 的 %OverviewMap）会丢，UI 相关条目全红，所以出包是可选路径。
+        binary = executable
+        if exported:
+            binary = export_debug(
+                executable, export_directory, processes, processes_lock, batch_deadline
+            )
         if binary is None:
             remove_package_directory(export_directory)
-            if all_timed_out.is_set():
+            if batch_timed_out.is_set():
                 print(
-                    f"--all 超过 {total_timeout_seconds / 60:g} 分钟上限，已终止",
+                    f"{tier_label} 超过 {total_timeout_seconds / 60:g} 分钟上限，已终止",
                     file=sys.stderr,
                 )
                 print(TIMEOUT_NOTICE, file=sys.stderr)
@@ -563,6 +640,19 @@ def run_tests(
 
         cancel = threading.Event() if concurrent and fail_fast else None
         cancel_lock = threading.Lock()
+        # 4 个引擎同时启动会一起去建 Vulkan swapchain，3~4G 显存的机器会随机报
+        # VK_ERROR_OUT_OF_HOST_MEMORY：并发不变，只把启动时刻按 LAUNCH_SPACING_SECONDS 错开。
+        launch_gate = threading.Lock()
+        last_launch = [0.0]
+
+        def wait_launch_slot() -> None:
+            if not concurrent:
+                return
+            with launch_gate:
+                delay = last_launch[0] + LAUNCH_SPACING_SECONDS - time.monotonic()
+                if delay > 0:
+                    time.sleep(delay)
+                last_launch[0] = time.monotonic()
 
         def run_named(name: str) -> tuple[str, float, int, str]:
             run_directory = test_run_directory(name)
@@ -570,20 +660,27 @@ def run_tests(
             if cancel is not None and cancel.is_set():
                 log_path.write_text("前面的测试失败，已跳过本项\n", encoding="utf-8")
                 return name, 0.0, SKIPPED_EXIT_CODE, ""
-            if all_timed_out.is_set():
-                log_path.write_text("--all 已到时间上限，本项未跑\n", encoding="utf-8")
+            if batch_timed_out.is_set():
+                log_path.write_text(f"{tier_label} 已到时间上限，本项未跑\n", encoding="utf-8")
                 return name, 0.0, TIMEOUT_EXIT_CODE, ""
             test_started = time.monotonic()
+            wait_launch_slot()
             code = run_and_watch(
-                launch_command(binary, tests[name], run_directory),
+                launch_command(
+                    binary,
+                    tests[name],
+                    run_directory,
+                    project_mode=not exported,
+                    concurrent_jobs=jobs if concurrent else 0,
+                ),
                 log_path,
                 working_directory=run_directory,
-                environment=isolated_user_data_environment(export_directory, name),
+                environment=isolated_user_data_environment(run_directory.parent, name),
                 cancel=cancel,
                 processes=processes,
                 processes_lock=processes_lock,
                 timeout_seconds=test_timeout_seconds,
-                deadline=all_deadline,
+                deadline=batch_deadline,
             )
             seconds = time.monotonic() - test_started
             if code != 0 and cancel is not None:
@@ -604,10 +701,11 @@ def run_tests(
             else:
                 results = [run_named(name) for name in names]
         finally:
-            remove_package_directory(export_directory)
+            if exported:
+                remove_package_directory(export_directory)
     finally:
-        if all_timer is not None:
-            all_timer.cancel()
+        if batch_timer is not None:
+            batch_timer.cancel()
 
     total_seconds = time.monotonic() - started
     write_timings(results)
@@ -620,9 +718,9 @@ def run_tests(
     skipped = [
         name for name, _seconds, code, _boot in results if code == SKIPPED_EXIT_CODE
     ]
-    if all_timed_out.is_set():
+    if batch_timed_out.is_set():
         print(
-            f"--all 超过 {total_timeout_seconds / 60:g} 分钟上限，已终止；本轮结果不作通过依据",
+            f"{tier_label} 超过 {total_timeout_seconds / 60:g} 分钟上限，已终止；本轮结果不作通过依据",
             file=sys.stderr,
         )
         print(TIMEOUT_NOTICE, file=sys.stderr)
@@ -642,7 +740,8 @@ def run_tests(
     if problems:
         print_problem_reports(problems)
         return 1
-    # 全部通过：只报总耗时，过程输出都在 .export/.test_<GUID>/ 里。
+    # 全部通过：只报结论与总耗时，过程输出都在 .export/.test_<GUID>/ 里。
+    print("测试通过")
     print(f"总计 {total_seconds:.1f}s")
     return 0
 
@@ -787,9 +886,18 @@ def macos_binary(output: Path) -> Path | None:
     return candidates[0] if candidates else None
 
 
-def launch_command(binary: Path, scene: str, run_directory: Path) -> list[str]:
+def launch_command(
+    binary: Path,
+    scene: str,
+    run_directory: Path,
+    project_mode: bool = False,
+    concurrent_jobs: int = 0,
+) -> list[str]:
     command = [str(binary), "--audio-driver", "Dummy"]
-    if sys.platform.startswith("linux"):
+    if project_mode:
+        # 编辑器可执行文件以项目运行模式直跑脚本：不开编辑器界面、不导出包。
+        command.extend(["--path", str(PROJECT)])
+    if sys.platform.startswith("linux") and not project_mode:
         command.extend(["--display-driver", "headless"])
     command.extend(
         [
@@ -798,6 +906,9 @@ def launch_command(binary: Path, scene: str, run_directory: Path) -> list[str]:
             f"--run-directory={run_directory}",
         ]
     )
+    if concurrent_jobs > 1:
+        # 并发跑时墙钟里混着排队：帧预算类断言据此放宽到并发档（见 tests/.readme.txt）。
+        command.append(f"--concurrent={concurrent_jobs}")
     return command
 
 
